@@ -4,15 +4,18 @@ import { ChevronLeft, Minus, Plus } from 'lucide-react';
 import { useNow } from '../lib/hooks';
 import { restLabel } from '../lib/format';
 
-/** Envolve cada tela com uma entrada suave. */
+/** Curva de desaceleração no estilo iOS, usada nas transições. */
+export const EASE = [0.32, 0.72, 0, 1];
+
+/** Envolve cada tela com uma entrada suave (só opacidade e um deslize curto: leve para o celular). */
 export function Page({ children, className = '', style }) {
   return (
     <motion.main
       className={`page ${className}`}
       style={style}
-      initial={{ opacity: 0, y: 10, filter: 'blur(4px)' }}
-      animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
-      transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+      initial={{ opacity: 0, y: 6 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.28, ease: EASE }}
     >
       {children}
       <Footer />

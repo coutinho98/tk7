@@ -1,4 +1,4 @@
-import { useEffect, useSyncExternalStore } from 'react';
+import { useEffect, useLayoutEffect, useSyncExternalStore } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useStore } from '../store';
 import { beep, notify, unlockAudio, vibrate } from '../lib/alerts';
@@ -73,7 +73,8 @@ export default function Effects() {
     addEventListener('pointerdown', unlockAudio, { once: true });
   }, []);
 
-  useEffect(() => { scrollTo(0, 0); }, [pathname]);
+  // volta ao topo antes de desenhar a tela nova, para não dar um pulo depois
+  useLayoutEffect(() => { scrollTo(0, 0); }, [pathname]);
 
   return null;
 }

@@ -295,6 +295,24 @@ button.back { padding: 0; border: 0; background: transparent; cursor: pointer; }
 }
 .tile-workout:hover .tile-play { transform: scale(1.12); }
 
+/* estante: fitas menores lado a lado, rolando na horizontal */
+.shelf {
+  display: flex;
+  gap: 12px;
+  margin: 0 -20px;
+  padding: 2px 20px 8px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scroll-padding: 0 20px;
+  scrollbar-width: none;
+}
+.shelf::-webkit-scrollbar { display: none; }
+.shelf-item { flex: none; width: 176px; scroll-snap-align: start; }
+.tile-workout.tile-sm { height: 140px; padding: 0 12px; border-radius: 22px; }
+.tile-sm .tile-play { right: 10px; bottom: 10px; width: 28px; height: 28px; }
+.shelf-item .tile-caption { padding: 10px 2px 0; }
+.shelf-item .tile-caption h3 { font-size: 13.5px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+
 .tile-caption {
   display: flex;
   justify-content: space-between;
@@ -306,6 +324,17 @@ button.back { padding: 0; border: 0; background: transparent; cursor: pointer; }
 .tile-caption p { margin: 2px 0 0; }
 
 .empty-tile .tile { margin-top: 4px; }
+.empty-case { display: block; filter: drop-shadow(0 16px 20px rgba(0, 0, 0, 0.12)); }
+.case-body { fill: color-mix(in srgb, var(--card) 70%, transparent); stroke: var(--line-strong); stroke-width: 1.5; }
+.case-hinge { fill: color-mix(in srgb, var(--text) 5%, transparent); }
+.case-line { stroke: var(--line-strong); }
+.case-spine { fill: #ff5a1f; opacity: 0.85; }
+.case-slot { fill: none; stroke: var(--text-3); stroke-width: 1.5; stroke-dasharray: 6 6; }
+.case-spindle { fill: var(--surface-2); stroke: var(--line-strong); }
+.case-dot { fill: var(--text-3); }
+.case-label { font-family: var(--mono); font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; fill: var(--text-3); }
+.case-shine { fill: #fff; opacity: 0.18; }
+:root[data-theme='dark'] .case-shine { opacity: 0.04; }
 
 .brand {
   display: inline-flex;
@@ -515,7 +544,7 @@ button.back { padding: 0; border: 0; background: transparent; cursor: pointer; }
 }
 .ticks { display: flex; flex-wrap: wrap; justify-content: center; gap: 3px; max-width: 340px; margin: 0 auto 8px; }
 .ticks i { width: 9px; height: 4px; border-radius: 2px; background: var(--line-strong); transition: background 0.3s; }
-.ticks i.on { background: var(--text); }
+.ticks i.on { background: var(--tape, var(--text)); }
 
 .card {
   padding: 16px;
@@ -524,10 +553,47 @@ button.back { padding: 0; border: 0; background: transparent; cursor: pointer; }
   background: var(--card);
   box-shadow: var(--shadow-card);
 }
-.ex-card { transition: opacity 0.3s; }
-.ex-card.complete { opacity: 0.6; }
+.ex-card { scroll-margin-top: calc(24px + env(safe-area-inset-top)); transition: box-shadow 0.3s; }
+.ex-card.closed { padding: 0; margin-bottom: 8px; }
+.ex-card.open { box-shadow: var(--shadow-card), 0 14px 30px -18px rgba(0, 0, 0, 0.25); }
 .ex-card-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 10px; }
 .ex-card-head h2 { flex: 1; min-width: 0; margin: 0; font-size: 16px; font-weight: 600; letter-spacing: -0.01em; }
+
+/* exercício fechado: uma linha só */
+.ex-collapsed {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 60px;
+  padding: 10px 14px 10px 12px;
+  border: 0;
+  border-radius: inherit;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+.ex-collapsed b { display: block; font-size: 14.5px; font-weight: 600; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.ex-collapsed small { display: block; font-size: 11.5px; color: var(--text-3); }
+.ex-card.complete .ex-collapsed b { color: var(--text-2); }
+.ex-title { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; padding: 0; border: 0; background: transparent; text-align: left; cursor: pointer; }
+.ex-status {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--surface);
+  color: var(--text-2);
+  font-size: 12.5px;
+  font-weight: 650;
+}
+.ex-card.open .ex-status { background: var(--tape, var(--primary)); color: #fff; }
+.ex-status.done { background: color-mix(in srgb, var(--tape, var(--primary)) 16%, var(--card)); color: var(--tape, var(--text)); }
+.ex-dots { display: flex; gap: 3px; flex: none; }
+.ex-dots i { width: 6px; height: 6px; border-radius: 50%; background: var(--line-strong); }
+.ex-dots i.on { background: var(--tape, var(--text)); }
 
 .set-grid {
   display: grid;
@@ -537,8 +603,10 @@ button.back { padding: 0; border: 0; background: transparent; cursor: pointer; }
 }
 .set-grid-head { padding: 0 6px 2px; font-size: 11px; color: var(--text-3); }
 .set-grid-head span:nth-child(3), .set-grid-head span:nth-child(4) { text-align: center; }
+.set-grid.no-prev { grid-template-columns: 22px 1fr 1fr 44px; }
+.set-grid-head.no-prev span:nth-child(2) { text-align: center; }
 .set-row { padding: 5px 6px; border-radius: 14px; transition: background 0.25s; }
-.set-row.done { background: var(--surface); }
+.set-row.done { background: color-mix(in srgb, var(--tape, var(--text)) 11%, var(--card)); }
 .set-n { font-size: 13px; color: var(--text-3); text-align: center; }
 .set-prev { font-size: 12.5px; color: var(--text-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .set-row input {
@@ -563,13 +631,47 @@ button.back { padding: 0; border: 0; background: transparent; cursor: pointer; }
   height: 40px;
   border: 0;
   border-radius: 50%;
-  background: var(--surface);
+  background: var(--card);
+  box-shadow: inset 0 0 0 1.5px var(--line-strong);
   color: var(--text-2);
   cursor: pointer;
   transition: background 0.2s, color 0.2s, box-shadow 0.2s;
 }
-.set-row.done .set-check { background: var(--primary); color: var(--primary-ink); box-shadow: 0 6px 14px -6px rgba(0, 0, 0, 0.5); }
-.ex-card-foot { display: flex; gap: 4px; margin-top: 6px; }
+.set-row.done .set-check {
+  background: var(--tape, var(--primary));
+  color: #fff;
+  box-shadow: 0 6px 14px -6px color-mix(in srgb, var(--tape, #000) 70%, transparent);
+}
+.ex-card-foot { display: flex; gap: 8px; margin-top: 10px; }
+.ex-card-foot .btn-ghost { flex: 1; height: 44px; background: var(--surface); color: var(--text-2); font-size: 14px; border-radius: 12px; }
+
+/* barra do treino (substitui o dock na tela de treino) */
+.session-bar {
+  position: fixed;
+  left: 12px;
+  right: 12px;
+  bottom: calc(14px + env(safe-area-inset-bottom));
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  max-width: 440px;
+  margin: 0 auto;
+  padding: 6px 6px 6px 18px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--card) 85%, transparent);
+  backdrop-filter: blur(14px) saturate(1.4);
+  -webkit-backdrop-filter: blur(14px) saturate(1.4);
+  box-shadow: var(--shadow-pill);
+}
+.session-bar-info { flex: 1; min-width: 0; display: grid; gap: 6px; font-size: 13px; color: var(--text-2); }
+.session-bar-info b { color: var(--text); font-weight: 650; }
+.session-bar-track { height: 4px; border-radius: 2px; background: var(--line-strong); overflow: hidden; }
+.session-bar-track i { display: block; height: 100%; background: var(--tape, var(--text)); transform-origin: left; transition: transform 0.4s var(--ease); }
+.session-finish { height: 46px; padding: 0 20px; border-radius: 999px; }
+.session-finish.ready { background: var(--tape, var(--primary)); color: #fff; animation: ready-pulse 1.6s ease-in-out infinite; }
+@keyframes ready-pulse { 50% { box-shadow: 0 0 0 7px color-mix(in srgb, var(--tape, #000) 22%, transparent); } }
+@media (prefers-reduced-motion: reduce) { .session-finish.ready { animation: none; } }
 
 /* séries de aquecimento */
 button.set-n {
@@ -769,7 +871,7 @@ button.set-n:hover { background: var(--surface); }
   position: fixed;
   left: 12px;
   right: 12px;
-  bottom: calc(80px + env(safe-area-inset-bottom));
+  bottom: calc(84px + env(safe-area-inset-bottom));
   max-width: 440px;
   margin: 0 auto;
   z-index: 45;
@@ -1268,5 +1370,6 @@ button.list-row {
 @media (max-width: 370px) {
   .tile-workout { gap: 16px; padding: 0 18px; }
   .set-grid { grid-template-columns: 18px 1fr 64px 52px 38px; gap: 6px; }
+  .set-grid.no-prev { grid-template-columns: 18px 1fr 1fr 40px; }
   .dock-item { padding: 0 11px; }
 }

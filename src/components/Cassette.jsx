@@ -3,6 +3,10 @@ import { useId } from 'react';
 /** Cores das etiquetas, uma por treino (na ordem da lista). */
 export const TAPE_COLORS = ['#ff5a1f', '#2f6bff', '#19b46b', '#f5b400', '#b04bff', '#ff3d7f'];
 
+/** Cor da fita de um treino, pela posição dele na lista. */
+export const tapeColor = (workouts, workoutId) =>
+  TAPE_COLORS[Math.max(0, workouts.findIndex((w) => w.id === workoutId)) % TAPE_COLORS.length];
+
 /**
  * Fita cassete feita em SVG — o "objeto" de cada treino.
  * O treino é a fita; o cronômetro de descanso (walkman) é o player.
@@ -53,14 +57,14 @@ export default function Cassette({ letter, title, tracks, footnote, color = TAPE
       <line x1="28" y1="76" x2="272" y2="76" stroke="#d8d1c2" strokeWidth="1" />
 
       {/* janela com as bobinas */}
-      <rect x="62" y="84" width="176" height="42" rx="21" fill={`url(#window-${id})`} stroke="#cfc8b8" strokeWidth="2" />
-      <rect x="112" y="98" width="76" height="14" rx="2" fill="rgba(255,255,255,.05)" />
-      <circle cx="100" cy="105" r="17" fill="#3b2a22" />
-      <circle cx="200" cy="105" r="12.5" fill="#3b2a22" />
-      <Reel cx={100} cy={105} />
-      <Reel cx={200} cy={105} />
+      <rect x="62" y="82" width="176" height="38" rx="19" fill={`url(#window-${id})`} stroke="#cfc8b8" strokeWidth="2" />
+      <rect x="112" y="94" width="76" height="14" rx="2" fill="rgba(255,255,255,.05)" />
+      <circle cx="100" cy="101" r="15.5" fill="#3b2a22" />
+      <circle cx="200" cy="101" r="11.5" fill="#3b2a22" />
+      <Reel cx={100} cy={101} />
+      <Reel cx={200} cy={101} />
 
-      {footnote && <text x="150" y="132" className="tape-foot" fill="#7d776a" textAnchor="middle">{footnote}</text>}
+      {footnote && <text x="150" y="133" className="tape-foot" fill="#7d776a" textAnchor="middle">{footnote}</text>}
 
       {/* parte de baixo */}
       <path d="M72 189 L86 152 L214 152 L228 189 Z" fill="#2a2a2d" stroke="rgba(255,255,255,.08)" />

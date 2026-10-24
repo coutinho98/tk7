@@ -10,8 +10,9 @@ export function clock(sec, { pad = false } = {}) {
   const h = Math.floor(sec / 3600);
   const m = Math.floor((sec % 3600) / 60);
   const s = String(sec % 60).padStart(2, '0');
-  if (h || pad) return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${s}`;
-  return `${m}:${s}`;
+  // horas só aparecem depois de 1h; com `pad`, os minutos ganham zero à esquerda (00:42)
+  if (h) return `${pad ? String(h).padStart(2, '0') : h}:${String(m).padStart(2, '0')}:${s}`;
+  return `${pad ? String(m).padStart(2, '0') : m}:${s}`;
 }
 
 export const restLabel = (sec) =>

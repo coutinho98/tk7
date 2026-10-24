@@ -4,10 +4,11 @@ import { ChevronLeft, Minus, Plus } from 'lucide-react';
 import { useNow } from '../lib/hooks';
 
 /** Envolve cada tela com uma entrada suave. */
-export function Page({ children, className = '' }) {
+export function Page({ children, className = '', style }) {
   return (
     <motion.main
       className={`page ${className}`}
+      style={style}
       initial={{ opacity: 0, y: 10, filter: 'blur(4px)' }}
       animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
       transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}

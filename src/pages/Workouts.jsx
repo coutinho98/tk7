@@ -24,6 +24,7 @@ export default function Workouts() {
   const navigate = useNavigate();
 
   const start = async (id) => {
+    if (active?.workoutId === id) return navigate('/sessao');
     if (active && !(await confirmDialog({
       title: 'Já tem um treino rolando',
       body: `“${active.name}” ainda está em andamento. Descartar e começar este?`,
@@ -96,53 +97,72 @@ export default function Workouts() {
         </div>
       ) : (
         <>
-          <SectionLabel action={<Link to="/editar/novo" className="chip chip-action"><Plus size={13} /> novo</Link>}>
-            Seus treinos · {workouts.length}
-          </SectionLabel>
-          <div className="tiles">
-            {workouts.map((w, i) => {
-              const lastDone = sessions.find((s) => s.workoutId === w.id);
-              const names = w.exercises.map((e) => e.name).filter(Boolean);
-              return (
-                <motion.article
-                  key={w.id}
-                  className="tile-card"
-                  initial={{ opacity: 0, y: 14 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.05 * i, duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-                >
-                  <motion.button className="tile tile-workout" onClick={() => start(w.id)} whileTap={{ scale: 0.98 }} aria-label={`Iniciar ${w.name}`}>
-                    <motion.div whileHover={{ y: -4, rotate: -1.5 }} transition={{ type: 'spring', stiffness: 300, damping: 18 }}>
-                      <Cassette
-                        letter={workoutLetter(w.name)}
-                        title={workoutFocus(w.name)}
-                        tracks={names.length}
-                        footnote={lastDone ? `última vez ${relativeDay(lastDone.start)}` : 'nunca tocada'}
-                        color={TAPE_COLORS[i % TAPE_COLORS.length]}
-                        playing={active?.workoutId === w.id}
-                      />
-                    </motion.div>
-                    <span className="tile-play"><Play size={14} fill="currentColor" /></span>
-                  </motion.button>
-                  <div className="tile-caption">
-                    <div className="grow">
-                      <h3>
-                        {w.name}
-                        {active?.workoutId === w.id && <span className="now-playing">tocando</span>}
-                      </h3>
-                      <p className="muted small tile-tracks">{names.join(' · ')}</p>
-                    </div>
-                    <Link to={`/editar/${w.id}`} className="icon-btn" aria-label={`Editar ${w.name}`}>
-                      <Pencil size={15} />
-                    </Link>
-                  </div>
-                </motion.article>
-              );
-            })}
-          </div>
+          {/* a fita sugerida fica em destaque; as outras vão para a estante, que rola para o lado */}
+          <SectionLabel>{active?.workoutId === next.id ? 'Tocando agora' : 'Próxima fita'}</SectionLabel>
+          <WorkoutTape w={next} index={workouts.indexOf(next)} sessions={sessions} active={active} onStart={start} hero />
+
+          {workouts.length > 1 && (
+            <>
+              <SectionLabel action={<Link to="/editar/novo" className="chip chip-action"><Plus size={13} /> novo</Link>}>
+                Sua estante · {plural(workouts.length, 'fita')}
+              </SectionLabel>
+              <div className="shelf">
+                {workouts.map((w, i) => w !== next && (
+                  <WorkoutTape key={w.id} w={w} index={i} sessions={sessions} active={active} onStart={start} delay={0.05 * i} />
+                ))}
+              </div>
+            </>
+          )}
+          {workouts.length === 1 && (
+            <div className="row-actions">
+              <Link to="/editar/novo" className="btn"><Plus size={16} /> Gravar outra fita</Link>
+            </div>
+          )}
         </>
       )}
     </Page>
+  );
+}
+
+/** Uma fita da lista: grande (destaque) ou pequena (estante). */
+function WorkoutTape({ w, index, sessions, active, onStart, hero = false, delay = 0 }) {
+  const lastDone = sessions.find((s) => s.workoutId === w.id);
+  const names = w.exercises.map((e) => e.name).filter(Boolean);
+  const playing = active?.workoutId === w.id;
+  return (
+    <motion.article
+      className={hero ? 'tile-card' : 'tile-card shelf-item'}
+      initial={{ opacity: 0, y: 14 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay, duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+    >
+      <motion.button className={`tile tile-workout ${hero ? '' : 'tile-sm'}`} onClick={() => onStart(w.id)} whileTap={{ scale: 0.98 }} aria-label={`${playing ? 'Continuar' : 'Iniciar'} ${w.name}`}>
+        <motion.div whileHover={{ y: -4, rotate: -1.5 }} transition={{ type: 'spring', stiffness: 300, damping: 18 }}>
+          <Cassette
+            letter={workoutLetter(w.name)}
+            title={workoutFocus(w.name)}
+            tracks={names.length}
+            footnote={lastDone ? `última vez ${relativeDay(lastDone.start)}` : 'nunca tocada'}
+            color={TAPE_COLORS[index % TAPE_COLORS.length]}
+            playing={playing}
+            width={hero ? 260 : 150}
+          />
+        </motion.div>
+        <span className="tile-play"><Play size={hero ? 14 : 12} fill="currentColor" /></span>
+      </motion.button>
+      <div className="tile-caption">
+        <div className="grow">
+          <h3>
+            {hero ? w.name : workoutFocus(w.name)}
+            {playing && <span className="now-playing">tocando</span>}
+          </h3>
+          <p className="muted small tile-tracks">{hero ? names.join(' · ') : `${workoutLetter(w.name)} · ${plural(names.length, 'exercício')}`}</p>
+        </div>
+        <Link to={`/editar/${w.id}`} className="icon-btn" aria-label={`Editar ${w.name}`}>
+          <Pencil size={15} />
+        </Link>
+      </div>
+    </motion.article>
   );
 }
 

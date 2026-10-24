@@ -5,6 +5,7 @@ import { TrendingDown, TrendingUp } from 'lucide-react';
 import { useStore } from '../store';
 import { Page, Chip, Sparkline } from '../components/ui';
 import Body from './Body';
+import EmptyState from '../components/EmptyState';
 import { kg, norm, plural, shortDate } from '../lib/format';
 import { TYPES, typeOf } from '../lib/exercises';
 import { METRIC, best, bestE1rm } from '../lib/records';
@@ -54,10 +55,13 @@ function Exercises() {
 
   if (!stats.length) {
     return (
-      <section className="prose intro">
-        <p>Progresso,</p>
-        <p>Aqui aparece a <b>evolução</b> de cada exercício. Faça seu primeiro treino para começar a curva.</p>
-      </section>
+      <>
+        <section className="prose intro">
+          <p>Progresso,</p>
+          <p>Aqui aparece a <b>evolução</b> de cada exercício. Faça seu primeiro treino para começar a curva.</p>
+        </section>
+        <EmptyState label="sem curvas por enquanto" />
+      </>
     );
   }
 

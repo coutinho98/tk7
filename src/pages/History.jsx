@@ -4,6 +4,7 @@ import { Flame, Trophy } from 'lucide-react';
 import { useStore } from '../store';
 import { Page, Chip } from '../components/ui';
 import Heatmap from '../components/Heatmap';
+import EmptyState from '../components/EmptyState';
 import { clock, doneSets, durationWords, kg, plural, shortDate, volumeOf } from '../lib/format';
 import { recordsIn, weekStreak } from '../lib/records';
 
@@ -17,6 +18,7 @@ export default function History() {
           <p>Histórico,</p>
           <p>Ainda não tem nada aqui. Quando você <b>finalizar um treino</b>, ele aparece nesta lista com duração, séries e volume.</p>
         </section>
+        <EmptyState label="nada gravado ainda" />
       </Page>
     );
   }

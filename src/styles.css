@@ -598,13 +598,14 @@ button.back { padding: 0; border: 0; background: transparent; cursor: pointer; }
 
 .set-grid {
   display: grid;
-  grid-template-columns: 22px 1fr 74px 60px 40px;
+  grid-template-columns: 22px minmax(0, 1fr) 74px 60px 40px;
   gap: 8px;
   align-items: center;
 }
 .set-grid-head { padding: 0 6px 2px; font-size: 11px; color: var(--text-3); }
 .set-grid-head span:nth-child(3), .set-grid-head span:nth-child(4) { text-align: center; }
-.set-grid.no-prev { grid-template-columns: 22px 1fr 1fr 44px; }
+/* mesma largura de coluna do ✓ nos dois layouts, para o botão ficar sempre no mesmo lugar */
+.set-grid.no-prev { grid-template-columns: 22px minmax(0, 1fr) minmax(0, 1fr) 40px; }
 .set-grid-head.no-prev span:nth-child(2) { text-align: center; }
 .set-row { padding: 5px 6px; border-radius: 14px; transition: background 0.25s; }
 .set-row.done { background: color-mix(in srgb, var(--tape, var(--text)) 11%, var(--card)); }
@@ -626,6 +627,7 @@ button.back { padding: 0; border: 0; background: transparent; cursor: pointer; }
 .set-row input:focus { box-shadow: 0 0 0 2px var(--text); background: var(--card); }
 .set-row.done input { background: transparent; }
 .set-check {
+  justify-self: end;
   display: grid;
   place-items: center;
   width: 40px;
@@ -1374,6 +1376,6 @@ button.list-row {
 @media (max-width: 370px) {
   .tile-workout { gap: 16px; padding: 0 18px; }
   .set-grid { grid-template-columns: 18px 1fr 64px 52px 38px; gap: 6px; }
-  .set-grid.no-prev { grid-template-columns: 18px 1fr 1fr 40px; }
+  .set-grid.no-prev { grid-template-columns: 18px minmax(0, 1fr) minmax(0, 1fr) 38px; }
   .dock-item { padding: 0 11px; }
 }

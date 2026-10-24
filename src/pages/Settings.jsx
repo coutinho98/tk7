@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { motion } from 'motion/react';
 import { Calculator, ChevronRight, Download, Upload, Trash2 } from 'lucide-react';
 import { useStore } from '../store';
@@ -9,6 +9,8 @@ import PlateCalc from '../components/PlateCalc';
 const THEMES = [['light', 'Claro'], ['dark', 'Escuro'], ['system', 'Sistema']];
 const BADGES = [['off', 'Nada'], ['streak', 'Sequência 🔥'], ['week', 'Na semana']];
 const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent);
+// No iPhone, o app aberto pelo ícone e o site no Safari guardam dados separados.
+const inSafariTab = isIOS && navigator.standalone === false;
 
 export default function Settings() {
   const settings = useStore((s) => s.settings);
@@ -17,6 +19,8 @@ export default function Settings() {
   const fileRef = useRef(null);
   const [plates, setPlates] = useState(false);
   const [notif, setNotif] = useState(() => ('Notification' in window ? Notification.permission : 'unsupported'));
+  const [persisted, setPersisted] = useState(null);
+  useEffect(() => { navigator.storage?.persisted?.().then(setPersisted).catch(() => {}); }, []);
 
   const askNotif = async () => setNotif(await Notification.requestPermission());
 
@@ -67,6 +71,13 @@ export default function Settings() {
         <p>Ajustes,</p>
         <p>Seus dados ficam <b>só neste aparelho</b>. Exporte um backup de vez em quando para não perder nada.</p>
       </section>
+
+      {inSafariTab && (
+        <div className="warn-card">
+          <b>Você está no Safari.</b> Os dados daqui são separados dos do app na tela de início. Use sempre pelo ícone — e
+          não apague o ícone para atualizar: o app se atualiza sozinho ao abrir.
+        </div>
+      )}
 
       <SectionLabel>Aparência</SectionLabel>
       <div className="seg seg-wide" role="radiogroup" aria-label="Tema">
@@ -131,6 +142,11 @@ export default function Settings() {
       <PlateCalc open={plates} onClose={() => setPlates(false)} />
 
       <SectionLabel>Backup</SectionLabel>
+      <p className="small muted hint-block">
+        {persisted
+          ? <>Armazenamento <b>protegido</b>: o navegador não apaga seus dados para liberar espaço.</>
+          : <>O navegador pode apagar os dados se faltar espaço ou se o app ficar muito tempo sem uso. Mantenha um backup.</>}
+      </p>
       <div className="row-actions">
         <button className="btn" onClick={exportData}><Download size={15} /> Exportar</button>
         <button className="btn" onClick={() => fileRef.current.click()}><Upload size={15} /> Importar</button>

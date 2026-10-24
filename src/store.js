@@ -16,14 +16,19 @@ const defaults = () => ({
 });
 
 function load() {
+  let raw = null;
   try {
-    const saved = JSON.parse(localStorage.getItem(KEY));
+    raw = localStorage.getItem(KEY);
+    const saved = JSON.parse(raw);
     if (saved) {
       // treino em andamento salvo por uma versão anterior: completa os campos novos
       saved.active?.exercises.forEach((e) => { e.type ||= 'weight'; e.exId ||= uid(); });
       return { ...defaults(), ...saved, settings: { ...defaults().settings, ...saved.settings } };
     }
-  } catch {}
+  } catch {
+    // dados ilegíveis: guarda uma cópia antes que qualquer gravação nova os substitua
+    try { if (raw && !localStorage.getItem(`${KEY}:recuperacao`)) localStorage.setItem(`${KEY}:recuperacao`, raw); } catch {}
+  }
   return defaults();
 }
 
@@ -276,8 +281,18 @@ export const useStore = create(
 );
 
 // Salva no aparelho sempre que algo muda.
-let lastSaved;
+let lastSaved, warned = false;
 useStore.subscribe((s) => {
   const json = JSON.stringify(persisted(s));
-  if (json !== lastSaved) localStorage.setItem(KEY, (lastSaved = json));
+  if (json === lastSaved) return;
+  lastSaved = json;
+  try {
+    localStorage.setItem(KEY, json);
+  } catch {
+    // avisa uma vez só (o próprio aviso muda o estado e chamaria isto de novo)
+    if (!warned) { warned = true; s.showToast('Não foi possível salvar — faça um backup em Ajustes'); }
+  }
 });
+
+// Pede ao navegador para não apagar os dados do app quando faltar espaço.
+navigator.storage?.persist?.().catch(() => {});

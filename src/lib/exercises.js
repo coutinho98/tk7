@@ -1,6 +1,10 @@
 import { uid, norm } from './format';
 
 export const REST_OPTIONS = [30, 45, 60, 75, 90, 120, 150, 180, 240, 300];
+export const WARMUP_REST_OPTIONS = [15, 30, 45, 60, 90, 120];
+
+/** Descanso depois de uma série de aquecimento: o escolhido, ou o do exercício limitado a 1 min. */
+export const warmupRestOf = (e) => e.warmupRest ?? Math.min(e.rest, 60);
 
 /**
  * Tipos de exercício. Cada série tem dois campos: `a` (à esquerda) e `b` (à direita).

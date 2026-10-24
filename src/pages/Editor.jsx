@@ -3,9 +3,9 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { AnimatePresence, Reorder, motion, useDragControls } from 'motion/react';
 import { GripVertical, Plus, Trash2, X } from 'lucide-react';
 import { useStore } from '../store';
-import { Page, BackLink, SectionLabel, Stepper } from '../components/ui';
-import { REST_OPTIONS, TYPES, TYPE_DEFAULTS, guessType, knownExercises, newExercise, typeOf } from '../lib/exercises';
-import { restLabel, uid } from '../lib/format';
+import { Page, BackLink, RestPick, SectionLabel, Stepper } from '../components/ui';
+import { REST_OPTIONS, TYPES, TYPE_DEFAULTS, WARMUP_REST_OPTIONS, guessType, knownExercises, newExercise, typeOf, warmupRestOf } from '../lib/exercises';
+import { uid } from '../lib/format';
 import { confirmDialog } from '../lib/confirm';
 
 export default function Editor() {
@@ -167,23 +167,11 @@ function ExerciseItem({ exercise: e, index, onChange, onRemove }) {
         </div>
       )}
 
-      <div className="rest-pick">
-        <span className="stepper-label">Descanso</span>
-        <div className="rest-options" role="radiogroup" aria-label="Descanso">
-          {REST_OPTIONS.map((s) => (
-            <button
-              key={s}
-              type="button"
-              role="radio"
-              aria-checked={e.rest === s}
-              className={`rest-opt mono ${e.rest === s ? 'on' : ''}`}
-              onClick={() => onChange({ rest: s })}
-            >
-              {restLabel(s)}
-            </button>
-          ))}
-        </div>
-      </div>
+      {type === 'weight' && e.warmup > 0 && (
+        <RestPick label="Descanso do aquecimento" options={WARMUP_REST_OPTIONS} value={warmupRestOf(e)} onChange={(s) => onChange({ warmupRest: s })} />
+      )}
+
+      <RestPick label={e.warmup > 0 && type === 'weight' ? 'Descanso das séries' : 'Descanso'} options={REST_OPTIONS} value={e.rest} onChange={(s) => onChange({ rest: s })} />
 
       <input
         className="note-input"
@@ -195,3 +183,4 @@ function ExerciseItem({ exercise: e, index, onChange, onRemove }) {
     </Reorder.Item>
   );
 }
+

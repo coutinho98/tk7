@@ -5,13 +5,13 @@ import {
   ArrowDown, ArrowUp, Calculator, Check, ChevronDown, Flame, Minus, MoreHorizontal, Plus, Repeat, StickyNote, Timer, Trash2, TrendingUp,
 } from 'lucide-react';
 import { useStore } from '../store';
-import { Page, BackLink } from '../components/ui';
+import { Page, BackLink, RestPick } from '../components/ui';
 import { Sheet } from '../components/Overlays';
 import PlateCalc from '../components/PlateCalc';
 import { tapeColor } from '../components/Cassette';
 import { useNow } from '../lib/hooks';
 import { clock, doneSets, kg, num, restLabel, totalSets } from '../lib/format';
-import { TYPES, knownExercises } from '../lib/exercises';
+import { TYPES, WARMUP_REST_OPTIONS, knownExercises, warmupRestOf } from '../lib/exercises';
 import { prevText } from '../lib/records';
 import { vibrate } from '../lib/alerts';
 import { confirmDialog, promptDialog } from '../lib/confirm';
@@ -172,6 +172,7 @@ function ExerciseCard({ exercise: e, ei, count, expanded, onToggleOpen, onComple
   const removeSet = useStore((s) => s.removeSet);
   const applySuggestion = useStore((s) => s.applySuggestion);
   const setExerciseNote = useStore((s) => s.setExerciseNote);
+  const setWarmupRest = useStore((s) => s.setWarmupRest);
   const replaceActiveExercise = useStore((s) => s.replaceActiveExercise);
   const removeActiveExercise = useStore((s) => s.removeActiveExercise);
   const moveActiveExercise = useStore((s) => s.moveActiveExercise);
@@ -288,6 +289,11 @@ function ExerciseCard({ exercise: e, ei, count, expanded, onToggleOpen, onComple
       )}
 
       <Sheet open={menu} onClose={() => setMenu(false)} title={e.name}>
+        {e.sets.some((s) => s.warmup) && (
+          <div className="menu-rest">
+            <RestPick label="Descanso do aquecimento" options={WARMUP_REST_OPTIONS} value={warmupRestOf(e)} onChange={(s) => setWarmupRest(ei, s)} />
+          </div>
+        )}
         <div className="menu-list">
           {a.key === 'weight' && e.type === 'weight' && (
             <button onClick={() => { setMenu(false); setPlates(true); }}><Calculator size={17} /> Calculadora de anilhas</button>

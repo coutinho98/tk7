@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
 import { uid } from './lib/format';
-import { TYPES, typeOf, guessType, newExercise, sampleWorkouts } from './lib/exercises';
+import { TYPES, typeOf, guessType, newExercise, sampleWorkouts, warmupRestOf } from './lib/exercises';
 import { lastSetsFor, suggestWeight, warmupSets } from './lib/records';
 
 // Mesma chave e formato da versão 1: os dados antigos continuam valendo, e o backup também.
@@ -47,6 +47,7 @@ function buildActiveExercise(tpl, sessions) {
     type,
     note: tpl.note || '',
     rest: tpl.rest || 90,
+    warmupRest: tpl.warmupRest ?? null,
     target,
     suggest: type === 'weight' ? suggestWeight(prev, target) : null,
     prev: prev ? prev.map((s) => ({ [a.key]: s[a.key] ?? null, [b.key]: s[b.key] ?? null })) : null,
@@ -130,7 +131,7 @@ export const useStore = create(
         st.done = !st.done;
         if (!st.done) return;
         if (st.warmup) {
-          startRestDraft(s.active, Math.min(e.rest, 60), `${e.name} · aquecimento`);
+          startRestDraft(s.active, warmupRestOf(e), `${e.name} · aquecimento`);
         } else {
           const work = e.sets.filter((x) => !x.warmup);
           startRestDraft(s.active, e.rest, `${e.name} · ${work.indexOf(st) + 1}/${work.length}`);
@@ -201,6 +202,15 @@ export const useStore = create(
         e.note = note;
         const tpl = s.workouts.find((w) => w.id === s.active.workoutId)?.exercises.find((x) => x.id === e.exId);
         if (tpl) tpl.note = note;
+      }),
+
+    // muda o descanso do aquecimento no treino em andamento e também no modelo do treino
+    setWarmupRest: (ei, sec) =>
+      set((s) => {
+        const e = s.active.exercises[ei];
+        e.warmupRest = sec;
+        const tpl = s.workouts.find((w) => w.id === s.active.workoutId)?.exercises.find((x) => x.id === e.exId);
+        if (tpl) tpl.warmupRest = sec;
       }),
 
     setSessionNote: (note) => set((s) => { s.active.note = note; }),

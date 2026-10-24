@@ -506,6 +506,7 @@ button.back { padding: 0; border: 0; background: transparent; cursor: pointer; }
 }
 
 .rest-pick { margin-top: 10px; }
+.menu-rest { margin: -4px 0 12px; padding: 0 4px; }
 .rest-options {
   display: flex;
   gap: 6px;

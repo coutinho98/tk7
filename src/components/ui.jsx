@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { ChevronLeft, Minus, Plus } from 'lucide-react';
 import { useNow } from '../lib/hooks';
+import { restLabel } from '../lib/format';
 
 /** Envolve cada tela com uma entrada suave. */
 export function Page({ children, className = '', style }) {
@@ -104,5 +105,28 @@ export function Sparkline({ values, height = 56, empty = 'treine mais uma vez pa
       <polyline points={line} fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
       <circle cx={lx} cy={ly} r="2.2" fill="currentColor" vectorEffect="non-scaling-stroke" />
     </svg>
+  );
+}
+
+/** Fileira de tempos de descanso para escolher. */
+export function RestPick({ label, options, value, onChange }) {
+  return (
+    <div className="rest-pick">
+      <span className="stepper-label">{label}</span>
+      <div className="rest-options" role="radiogroup" aria-label={label}>
+        {options.map((s) => (
+          <button
+            key={s}
+            type="button"
+            role="radio"
+            aria-checked={value === s}
+            className={`rest-opt mono ${value === s ? 'on' : ''}`}
+            onClick={() => onChange(s)}
+          >
+            {restLabel(s)}
+          </button>
+        ))}
+      </div>
+    </div>
   );
 }

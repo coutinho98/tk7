@@ -12,7 +12,7 @@ const defaults = () => ({
   sessions: [],  // treinos concluídos, mais recente primeiro
   active: null,  // treino em andamento
   body: [],      // peso corporal e medidas, mais recente primeiro
-  settings: { sound: true, vibrate: true, wakeLock: true, theme: 'system' },
+  settings: { sound: true, vibrate: true, wakeLock: true, theme: 'system', badge: 'streak' },
 });
 
 function load() {

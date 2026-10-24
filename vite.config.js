@@ -26,6 +26,12 @@ export default defineConfig({
           { src: 'icons/icon-512.png', sizes: '512x512', type: 'image/png' },
           { src: 'icons/icon-maskable-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
         ],
+        // Atalhos ao segurar o ícone (Android). No iPhone não aparecem.
+        shortcuts: [
+          { name: 'Começar próximo treino', short_name: 'Próximo treino', url: './#/iniciar', icons: [{ src: 'icons/icon-192.png', sizes: '192x192' }] },
+          { name: 'Histórico', short_name: 'Histórico', url: './#/historico', icons: [{ src: 'icons/icon-192.png', sizes: '192x192' }] },
+          { name: 'Registrar peso', short_name: 'Peso', url: './#/progresso?aba=corpo', icons: [{ src: 'icons/icon-192.png', sizes: '192x192' }] },
+        ],
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,png,svg,woff2}'],

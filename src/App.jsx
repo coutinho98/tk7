@@ -12,6 +12,7 @@ import History from './pages/History';
 import SessionDetail from './pages/SessionDetail';
 import Progress from './pages/Progress';
 import Settings from './pages/Settings';
+import StartNext from './pages/StartNext';
 
 registerSW({ immediate: true });
 
@@ -25,6 +26,7 @@ export default function App() {
           <Route path="/" element={<Workouts />} />
           <Route path="/editar/:id" element={<Editor />} />
           <Route path="/sessao" element={<Session />} />
+          <Route path="/iniciar" element={<StartNext />} />
           <Route path="/historico" element={<History />} />
           <Route path="/historico/:id" element={<SessionDetail />} />
           <Route path="/progresso" element={<Progress />} />

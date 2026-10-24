@@ -2,6 +2,7 @@ import { useEffect, useSyncExternalStore } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useStore } from '../store';
 import { beep, notify, unlockAudio, vibrate } from '../lib/alerts';
+import { thisWeekCount, weekStreak } from '../lib/records';
 
 const darkQuery = matchMedia('(prefers-color-scheme: dark)');
 const subscribeDark = (cb) => { darkQuery.addEventListener('change', cb); return () => darkQuery.removeEventListener('change', cb); };
@@ -19,6 +20,8 @@ export default function Effects() {
   const { pathname } = useLocation();
   const hasActive = useStore((s) => !!s.active);
   const wakeLockOn = useStore((s) => s.settings.wakeLock);
+  const sessions = useStore((s) => s.sessions);
+  const badge = useStore((s) => s.settings.badge);
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
@@ -58,6 +61,13 @@ export default function Effects() {
     document.addEventListener('visibilitychange', acquire);
     return () => { cancelled = true; document.removeEventListener('visibilitychange', acquire); lock?.release(); };
   }, [hasActive, wakeLockOn, pathname]);
+
+  // Número no ícone do app (iPhone com notificações ativadas; Android depende do launcher).
+  useEffect(() => {
+    if (!('setAppBadge' in navigator)) return;
+    const n = badge === 'streak' ? weekStreak(sessions) : badge === 'week' ? thisWeekCount(sessions) : 0;
+    (n ? navigator.setAppBadge(n) : navigator.clearAppBadge()).catch(() => {});
+  }, [sessions, badge]);
 
   useEffect(() => {
     addEventListener('pointerdown', unlockAudio, { once: true });

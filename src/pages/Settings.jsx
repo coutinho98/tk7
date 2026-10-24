@@ -7,6 +7,8 @@ import { confirmDialog } from '../lib/confirm';
 import PlateCalc from '../components/PlateCalc';
 
 const THEMES = [['light', 'Claro'], ['dark', 'Escuro'], ['system', 'Sistema']];
+const BADGES = [['off', 'Nada'], ['streak', 'Sequência 🔥'], ['week', 'Na semana']];
+const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent);
 
 export default function Settings() {
   const settings = useStore((s) => s.settings);
@@ -75,6 +77,23 @@ export default function Settings() {
           </button>
         ))}
       </div>
+
+      <SectionLabel>Número no ícone</SectionLabel>
+      <div className="seg seg-wide" role="radiogroup" aria-label="Número no ícone">
+        {BADGES.map(([key, label]) => (
+          <button key={key} role="radio" aria-checked={settings.badge === key} className={settings.badge === key ? 'on' : ''} onClick={() => setSetting('badge', key)}>
+            {settings.badge === key && <motion.span layoutId="badge-seg" className="seg-knob" transition={{ type: 'spring', stiffness: 500, damping: 38 }} />}
+            <span>{label}</span>
+          </button>
+        ))}
+      </div>
+      <p className="small muted hint">
+        {!('setAppBadge' in navigator)
+          ? 'Este navegador não mostra número no ícone.'
+          : isIOS
+            ? 'No iPhone, precisa do app na tela de início e das notificações ativadas (logo abaixo).'
+            : 'Aparece com o app instalado; alguns celulares mostram só uma bolinha.'}
+      </p>
 
       <SectionLabel>Descanso</SectionLabel>
       <div className="card settings-list">

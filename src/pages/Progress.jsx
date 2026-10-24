@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { TrendingDown, TrendingUp } from 'lucide-react';
 import { useStore } from '../store';
@@ -27,7 +28,9 @@ function exerciseStats(sessions) {
 const TABS = [['ex', 'Exercícios'], ['body', 'Corpo']];
 
 export default function Progress() {
-  const [tab, setTab] = useState('ex');
+  // ?aba=corpo abre direto na aba Corpo (usado pelo atalho do ícone).
+  const [params] = useSearchParams();
+  const [tab, setTab] = useState(params.get('aba') === 'corpo' ? 'body' : 'ex');
   return (
     <Page>
       <div className="seg seg-wide tabs-top" role="tablist">

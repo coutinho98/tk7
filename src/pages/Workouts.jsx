@@ -7,6 +7,7 @@ import Cassette, { TAPE_COLORS } from '../components/Cassette';
 import { useNow } from '../lib/hooks';
 import { clock, plural, relativeDay, workoutFocus, workoutLetter, doneSets, totalSets } from '../lib/format';
 import { confirmDialog } from '../lib/confirm';
+import { nextWorkout } from '../lib/records';
 
 function greeting() {
   const h = new Date().getHours();
@@ -35,9 +36,7 @@ export default function Workouts() {
 
   const week = sessions.filter((s) => s.start >= Date.now() - 7 * 864e5).length;
   const last = sessions[0];
-  // Sugestão: o treino que vem depois do último feito, na ordem da lista.
-  const lastIdx = last ? workouts.findIndex((w) => w.id === last.workoutId) : -1;
-  const next = workouts.length ? workouts[(lastIdx + 1) % workouts.length] : null;
+  const next = nextWorkout(workouts, sessions);
   const today = new Date().toLocaleDateString('pt-BR', { weekday: 'long' });
 
   return (

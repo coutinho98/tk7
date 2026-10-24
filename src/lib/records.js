@@ -164,3 +164,16 @@ export function heatmap(sessions, weeks = 17) {
   }
   return days;
 }
+
+/** Treinos feitos na semana atual (de segunda a domingo). */
+export function thisWeekCount(sessions) {
+  const w = weekStart(Date.now()).getTime();
+  return sessions.filter((s) => s.start >= w).length;
+}
+
+/** Sugestão de próximo treino: o que vem depois do último feito, na ordem da lista. */
+export function nextWorkout(workouts, sessions) {
+  if (!workouts.length) return null;
+  const lastIdx = sessions[0] ? workouts.findIndex((w) => w.id === sessions[0].workoutId) : -1;
+  return workouts[(lastIdx + 1) % workouts.length];
+}

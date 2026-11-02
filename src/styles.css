@@ -225,6 +225,7 @@ input::placeholder { color: var(--text-3); }
 .danger, .btn-text.danger { color: var(--danger); }
 
 .icon-btn {
+  padding: 0;
   display: inline-grid;
   place-items: center;
   width: 34px;
@@ -627,6 +628,7 @@ button.back { padding: 0; border: 0; background: transparent; cursor: pointer; }
 .set-row input:focus { box-shadow: 0 0 0 2px var(--text); background: var(--card); }
 .set-row.done input { background: transparent; }
 .set-check {
+  padding: 0; /* o iPhone põe ~1em dos lados nos botões e empurra o ícone */
   justify-self: end;
   display: grid;
   place-items: center;
@@ -944,6 +946,7 @@ button.set-n:hover { background: var(--surface); }
 }
 .device-keys { display: flex; flex-direction: column; gap: 6px; }
 .key {
+  padding: 0;
   display: grid;
   place-items: center;
   border: 0;

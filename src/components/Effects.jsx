@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useSyncExternalStore } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useStore } from '../store';
-import { beep, notify, unlockAudio, vibrate } from '../lib/alerts';
+import { listenForUnlock, notify, restAlert } from '../lib/alerts';
 import { thisWeekCount, weekStreak } from '../lib/records';
 
 const darkQuery = matchMedia('(prefers-color-scheme: dark)');
@@ -35,8 +35,7 @@ export default function Effects() {
       if (!active?.restEnd || Date.now() < active.restEnd) return;
       endRest();
       showToast('Descanso acabou — bora! 💪');
-      if (settings.vibrate) vibrate([300, 150, 300, 150, 300]);
-      if (settings.sound) beep();
+      restAlert(settings);
       notify('Descanso acabou!', 'Bora pra próxima série 💪');
     };
     const t = setInterval(check, 250);
@@ -69,9 +68,7 @@ export default function Effects() {
     (n ? navigator.setAppBadge(n) : navigator.clearAppBadge()).catch(() => {});
   }, [sessions, badge]);
 
-  useEffect(() => {
-    addEventListener('pointerdown', unlockAudio, { once: true });
-  }, []);
+  useEffect(listenForUnlock, []);
 
   // volta ao topo antes de desenhar a tela nova, para não dar um pulo depois
   useLayoutEffect(() => { scrollTo(0, 0); }, [pathname]);

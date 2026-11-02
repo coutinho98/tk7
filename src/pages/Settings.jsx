@@ -4,11 +4,12 @@ import { Calculator, ChevronRight, Download, Upload, Trash2 } from 'lucide-react
 import { useStore } from '../store';
 import { Page, SectionLabel, Switch } from '../components/ui';
 import { confirmDialog } from '../lib/confirm';
+import { isIOS, restAlert, unlockAudio } from '../lib/alerts';
 import PlateCalc from '../components/PlateCalc';
 
+const CHIMES = [['onda', 'Onda'], ['gota', 'Gota'], ['bolha', 'Bolha']];
 const THEMES = [['light', 'Claro'], ['dark', 'Escuro'], ['system', 'Sistema']];
 const BADGES = [['off', 'Nada'], ['streak', 'Sequência 🔥'], ['week', 'Na semana']];
-const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent);
 // No iPhone, o app aberto pelo ícone e o site no Safari guardam dados separados.
 const inSafariTab = isIOS && navigator.standalone === false;
 
@@ -21,6 +22,13 @@ export default function Settings() {
   const [notif, setNotif] = useState(() => ('Notification' in window ? Notification.permission : 'unsupported'));
   const [persisted, setPersisted] = useState(null);
   useEffect(() => { navigator.storage?.persisted?.().then(setPersisted).catch(() => {}); }, []);
+
+  // escolher um som já toca ele (com a vibração, se estiver ligada)
+  const pickChime = (key) => {
+    setSetting('chime', key);
+    unlockAudio();
+    restAlert({ ...settings, chime: key, sound: true });
+  };
 
   const askNotif = async () => setNotif(await Notification.requestPermission());
 
@@ -106,12 +114,28 @@ export default function Settings() {
             : 'Aparece com o app instalado; alguns celulares mostram só uma bolinha.'}
       </p>
 
+      <SectionLabel>Som do aviso</SectionLabel>
+      <div className="seg seg-wide" role="radiogroup" aria-label="Som do aviso">
+        {CHIMES.map(([key, label]) => (
+          <button key={key} role="radio" aria-checked={settings.chime === key} className={settings.chime === key ? 'on' : ''} onClick={() => pickChime(key)}>
+            {settings.chime === key && <motion.span layoutId="chime-seg" className="seg-knob" transition={{ type: 'spring', stiffness: 500, damping: 38 }} />}
+            <span>{label}</span>
+          </button>
+        ))}
+      </div>
+      <p className="small muted hint">Toque para ouvir.{isIOS && ' No modo silencioso, só vibra.'}</p>
+
       <SectionLabel>Descanso</SectionLabel>
       <div className="card settings-list">
-        <Row title="Som ao terminar" hint="Bipe quando o descanso acaba">
+        <Row title="Som ao terminar" hint="Toca o som escolhido quando o descanso acaba">
           <Switch label="Som" checked={settings.sound} onChange={(v) => setSetting('sound', v)} />
         </Row>
-        <Row title="Vibrar ao terminar" hint="Funciona no Android">
+        {settings.sound && !isIOS && (
+          <Row title="Abaixar a música" hint="Baixa o volume de outros apps durante o aviso">
+            <Switch label="Abaixar a música" checked={settings.duck} onChange={(v) => setSetting('duck', v)} />
+          </Row>
+        )}
+        <Row title="Vibrar ao terminar" hint={isIOS ? 'No iPhone, toques leves (iOS 18 ou mais novo)' : 'No mesmo ritmo do som'}>
           <Switch label="Vibrar" checked={settings.vibrate} onChange={(v) => setSetting('vibrate', v)} />
         </Row>
         <Row title="Manter tela ligada" hint="Durante o treino em andamento">

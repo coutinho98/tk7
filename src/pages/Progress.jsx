@@ -99,7 +99,7 @@ function Exercises() {
                     {type !== 'weight' && ` · ${TYPES[type].label.toLowerCase()}`}
                   </span>
                 </span>
-                <MiniTrend values={vals} record={isRecord} />
+                <MiniTrend values={vals} record={isRecord} tone={trend} />
                 <span className={`trend-delta ${trend || ''}`}>
                   {trend === 'flat' ? 'igual' : trend ? <>{delta > 0 ? '+' : '−'}{kg(Math.abs(delta))}<small>{unit}</small></> : <small>1º treino</small>}
                 </span>

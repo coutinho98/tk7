@@ -1492,6 +1492,12 @@ button.list-row {
 .mini-trend { display: block; flex: none; color: var(--text); overflow: visible; }
 .mini-trend-line { fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linejoin: round; stroke-linecap: round; }
 .mini-trend .pchart-dot { stroke: var(--bg); stroke-width: 2; }
+.mini-trend.up { color: var(--up); }
+.mini-trend.down { color: var(--danger); }
+.mini-trend.flat { color: var(--text-3); }
+.mini-trend-ref { stroke: var(--text-3); stroke-width: 1; stroke-dasharray: 1.5 3; stroke-linecap: round; opacity: 0.7; }
+.mini-trend-start { fill: var(--bg); stroke: currentColor; stroke-width: 1.4; }
+.mini-trend-halo { fill: var(--gold); opacity: 0.22; }
 .trend-delta {
   flex: none;
   min-width: 64px;

@@ -202,7 +202,10 @@ function ExerciseCard({ exercise: e, ei, count, expanded, onToggleOpen, onComple
     const others = best(now.type, now.sets.filter((_, i) => i !== si));
     if (isRecord(s) && (others == null || METRIC[now.type].of(s) > others)) {
       const { unit } = METRIC[now.type];
-      showToast(`🏆 Recorde! ${now.name} · ${kg(METRIC[now.type].of(s))} ${unit} (antes ${kg(record)})`, 'pr');
+      const value = METRIC[now.type].of(s);
+      useStore.setState({ prFlash: { name: now.name, value, prev: record, unit, ei, si, at: Date.now() } });
+      // o aparelho de descanso mostra a comemoração; sem ele na tela, cai num aviso simples
+      if (!active.restEnd) showToast(`Recorde: ${now.name} · ${kg(value)} ${unit}`, 'pr');
       if (settings.vibrate) vibrate([40, 70, 40, 70, 160]);
     }
     if (isComplete(now)) onComplete();
@@ -343,7 +346,10 @@ function SetRow({ set: s, label, prev, showPrev, type, ei, si, canWarmup, record
   const toggleSet = useStore((st) => st.toggleSet);
   const toggleWarmup = useStore((st) => st.toggleWarmup);
   const { a, b } = TYPES[type];
+  const flash = useStore((st) => (st.prFlash?.ei === ei && st.prFlash?.si === si ? st.prFlash : null));
   const toggle = () => {
+    // desmarcou a série do recorde: encerra a comemoração
+    if (s.done && flash) useStore.setState({ prFlash: null });
     toggleSet(ei, si);
     if (!s.done) {
       vibrate(25);
@@ -373,9 +379,13 @@ function SetRow({ set: s, label, prev, showPrev, type, ei, si, canWarmup, record
           aria-label={s.warmup ? 'Série de aquecimento — tocar para virar série válida' : `Série ${label} — tocar para virar aquecimento`}
         >
           {record ? <Trophy size={13} aria-label="recorde" /> : label}
+          {flash && <PrBurst key={flash.at} />}
         </button>
       ) : (
-        <span className="set-n mono">{record ? <Trophy size={13} aria-label="recorde" /> : label}</span>
+        <span className="set-n mono">
+          {record ? <Trophy size={13} aria-label="recorde" /> : label}
+          {flash && <PrBurst key={flash.at} />}
+        </span>
       )}
       {showPrev && <span className="set-prev mono">{prevText(type, prev)}</span>}
       {field(a, a.long)}
@@ -399,5 +409,25 @@ function SetRow({ set: s, label, prev, showPrev, type, ei, si, canWarmup, record
         </svg>
       </motion.button>
     </motion.div>
+  );
+}
+
+/** Faíscas douradas saindo do troféu no instante do recorde. */
+function PrBurst() {
+  return (
+    <span className="pr-burst" aria-hidden="true">
+      {Array.from({ length: 10 }, (_, i) => {
+        const angle = (i / 10) * Math.PI * 2 - Math.PI / 2;
+        const dist = 22 + (i % 2) * 10;
+        return (
+          <motion.i
+            key={i}
+            initial={{ x: 0, y: 0, opacity: 1, scale: 1, rotate: 0 }}
+            animate={{ x: Math.cos(angle) * dist, y: Math.sin(angle) * dist, opacity: 0, scale: 0.3, rotate: 90 }}
+            transition={{ duration: 0.75, delay: 0.05 + (i % 3) * 0.03, ease: [0.22, 1, 0.36, 1] }}
+          />
+        );
+      })}
+    </span>
   );
 }

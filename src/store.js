@@ -83,6 +83,7 @@ export const useStore = create(
 
     /* ---------- desfazer ---------- */
     toast: null,
+    prFlash: null, // recorde recém-batido, comemorado no aparelho de descanso (não é salvo)
     showToast: (msg, kind) => set((s) => { s.toast = { msg, id: uid(), kind }; }),
 
     /** Executa uma ação destrutiva e mostra um aviso com "Desfazer". */

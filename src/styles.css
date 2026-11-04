@@ -1492,8 +1492,8 @@ button.list-row {
 .mini-trend { display: block; flex: none; color: var(--text); overflow: visible; }
 .mini-trend-line { fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linejoin: round; stroke-linecap: round; }
 .mini-trend .pchart-dot { stroke: var(--bg); stroke-width: 2; }
-.mini-trend.up { color: var(--up); }
-.mini-trend.down { color: var(--danger); }
+.mini-trend.up { color: var(--text); }
+.mini-trend.down { color: var(--text-2); }
 .mini-trend.flat { color: var(--text-3); }
 .mini-trend-ref { stroke: var(--text-3); stroke-width: 1; stroke-dasharray: 1.5 3; stroke-linecap: round; opacity: 0.7; }
 .mini-trend-start { fill: var(--bg); stroke: currentColor; stroke-width: 1.4; }
@@ -1508,6 +1508,6 @@ button.list-row {
   color: var(--text-3);
 }
 .trend-delta small { margin-left: 2px; font-size: 11px; font-weight: 500; opacity: 0.75; }
-.trend-delta.up { color: var(--up); }
-.trend-delta.down { color: var(--danger); }
+.trend-delta.up { color: var(--text); }
+.trend-delta.down { color: var(--text-2); }
 .trend-delta.flat { font-weight: 500; font-size: 13px; }

@@ -1484,3 +1484,24 @@ button.list-row {
 .list-main b.mono { display: inline-flex; align-items: center; gap: 6px; }
 .ellipsis { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .detail-ex h2 a { color: inherit; text-decoration: none; }
+
+/* lista de tendências na aba Progresso */
+.trend-list { margin-top: 4px; }
+.trend-row { gap: 14px; }
+.trend-row .list-main { flex: 1; }
+.mini-trend { display: block; flex: none; color: var(--text); overflow: visible; }
+.mini-trend-line { fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linejoin: round; stroke-linecap: round; }
+.mini-trend .pchart-dot { stroke: var(--bg); stroke-width: 2; }
+.trend-delta {
+  flex: none;
+  min-width: 64px;
+  font-size: 14px;
+  font-weight: 600;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-3);
+}
+.trend-delta small { margin-left: 2px; font-size: 11px; font-weight: 500; opacity: 0.75; }
+.trend-delta.up { color: var(--up); }
+.trend-delta.down { color: var(--danger); }
+.trend-delta.flat { font-weight: 500; font-size: 13px; }

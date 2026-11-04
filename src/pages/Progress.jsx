@@ -1,12 +1,12 @@
 import { useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { motion } from 'motion/react';
-import { ChevronRight, TrendingDown, TrendingUp } from 'lucide-react';
 import { useStore } from '../store';
-import { Page, Chip, Sparkline } from '../components/ui';
+import { Page, Chip } from '../components/ui';
+import { MiniTrend } from '../components/ProgressChart';
 import Body from './Body';
 import EmptyState from '../components/EmptyState';
-import { kg, norm, plural, shortDate } from '../lib/format';
+import { kg, norm, plural } from '../lib/format';
 import { TYPES } from '../lib/exercises';
 import { METRIC, exerciseStats } from '../lib/records';
 
@@ -81,52 +81,33 @@ function Exercises() {
         </p>
       )}
 
-      <div className="tiles">
+      <ul className="list trend-list">
         {shown.map(({ key, name, type, points }, i) => {
           const useE1rm = metric === 'e1rm' && type === 'weight';
-          const vals = points.map((p) => (useE1rm ? p.e1rm : p.best));
+          const vals = points.map((p) => (useE1rm ? p.e1rm : p.best)).slice(-20);
           const unit = useE1rm ? 'kg' : METRIC[type].unit;
-          const last = vals.at(-1), top = Math.max(...vals), delta = last - vals[0];
+          const last = vals.at(-1), delta = last - vals[0];
+          const isRecord = vals.length > 1 && last >= Math.max(...points.map((p) => (useE1rm ? p.e1rm : p.best))) && delta > 0;
+          const trend = vals.length < 2 ? null : Math.abs(delta) < 0.05 ? 'flat' : delta > 0 ? 'up' : 'down';
           return (
-            <motion.article
-              key={name}
-              className="tile-card"
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.04 * i, duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-            >
-              <Link to={`/progresso/${encodeURIComponent(key)}${useE1rm ? '?metrica=1rm' : ''}`} className="tile-link">
-              <div className="tile tile-progress">
-                <div className="progress-top">
-                  <span className="progress-value mono">{kg(last)}<small>{unit}</small></span>
-                  {points.length > 1 && Math.abs(delta) >= 0.05 && (
-                    <span className={`delta mono ${delta > 0 ? 'up' : 'down'}`}>
-                      {delta > 0 ? <TrendingUp size={13} /> : <TrendingDown size={13} />}
-                      {delta > 0 ? '+' : ''}{kg(delta)}
-                    </span>
-                  )}
-                </div>
-                <Sparkline values={vals.slice(-20)} />
-                <div className="progress-axis mono">
-                  <span>{shortDate(points.at(-Math.min(20, points.length)).date)}</span>
-                  <span>{shortDate(points.at(-1).date)}</span>
-                </div>
-              </div>
-              <div className="tile-caption">
-                <div>
-                  <h3>{name}</h3>
-                  <p className="muted small">
-                    {useE1rm ? '1RM' : METRIC[type].label} · recorde {kg(top)} {unit} · {plural(points.length, 'treino')}
+            <motion.li key={key} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.03 * i, duration: 0.3, ease: [0.22, 1, 0.36, 1] }}>
+              <Link to={`/progresso/${encodeURIComponent(key)}${useE1rm ? '?metrica=1rm' : ''}`} className="list-row trend-row">
+                <span className="list-main">
+                  <b>{name}</b>
+                  <span className="muted small">
+                    {kg(last)}&nbsp;{unit} · {plural(points.length, 'treino')}
                     {type !== 'weight' && ` · ${TYPES[type].label.toLowerCase()}`}
-                  </p>
-                </div>
-                <ChevronRight size={16} className="faint" />
-              </div>
+                  </span>
+                </span>
+                <MiniTrend values={vals} record={isRecord} />
+                <span className={`trend-delta ${trend || ''}`}>
+                  {trend === 'flat' ? 'igual' : trend ? <>{delta > 0 ? '+' : '−'}{kg(Math.abs(delta))}<small>{unit}</small></> : <small>1º treino</small>}
+                </span>
               </Link>
-            </motion.article>
+            </motion.li>
           );
         })}
-      </div>
+      </ul>
     </>
   );
 }

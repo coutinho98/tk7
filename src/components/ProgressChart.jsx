@@ -131,3 +131,35 @@ export default function ProgressChart({ data, top, format, label, readout }) {
     </div>
   );
 }
+
+/**
+ * Mini-gráfico de tendência para listas: desenhado no tamanho real (sem esticar) e com uma faixa
+ * mínima no eixo Y, para que 50 → 52,5 kg não pareça uma montanha-russa.
+ */
+export function MiniTrend({ values, record = false, width = 76, height = 30 }) {
+  if (values.length < 2) {
+    // um treino só: um ponto, sem linha
+    return (
+      <svg className="mini-trend" width={width} height={height} viewBox={`0 0 ${width} ${height}`} aria-hidden="true">
+        <circle cx={width - 4} cy={height / 2} r="3" className="pchart-dot" />
+      </svg>
+    );
+  }
+  const pad = 4;
+  const lo = Math.min(...values), hi = Math.max(...values);
+  // faixa mínima de 30% da carga: oscilar 50 ↔ 55 kg aparece como ondinha, não como serrote
+  const span = Math.max(hi - lo, Math.abs(hi) * 0.3, 1);
+  const mid = (hi + lo) / 2;
+  const yMin = mid - span / 2;
+  const pts = values.map((v, i) => [
+    +(pad + (i / (values.length - 1)) * (width - pad * 2)).toFixed(1),
+    +(pad + (1 - (v - yMin) / span) * (height - pad * 2)).toFixed(1),
+  ]);
+  const [lx, ly] = pts.at(-1);
+  return (
+    <svg className="mini-trend" width={width} height={height} viewBox={`0 0 ${width} ${height}`} aria-hidden="true">
+      <path d={smoothPath(pts)} className="mini-trend-line" />
+      <circle cx={lx} cy={ly} r="3" className={record ? 'pchart-dot pr' : 'pchart-dot'} />
+    </svg>
+  );
+}

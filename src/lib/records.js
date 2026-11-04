@@ -177,3 +177,43 @@ export function nextWorkout(workouts, sessions) {
   const lastIdx = sessions[0] ? workouts.findIndex((w) => w.id === sessions[0].workoutId) : -1;
   return workouts[(lastIdx + 1) % workouts.length];
 }
+
+/* ---------- progressão por exercício ---------- */
+
+/** Melhor marca já registrada do exercício (métrica principal, sem aquecimento). */
+export function recordOf(sessions, name) {
+  const k = norm(name);
+  return maxOf(sessions.flatMap((s) => s.exercises.filter((x) => norm(x.name) === k).map((x) => best(typeOf(x), x.sets))));
+}
+
+/** Para cada exercício, a melhor marca em cada treino (do mais antigo ao mais recente). */
+export function exerciseStats(sessions) {
+  const map = new Map();
+  for (const s of [...sessions].reverse()) {
+    for (const e of s.exercises) {
+      const type = typeOf(e);
+      const value = best(type, e.sets);
+      if (value == null) continue;
+      const k = norm(e.name);
+      if (!map.has(k)) map.set(k, { key: k, name: e.name, type, points: [] });
+      map.get(k).points.push({
+        date: s.start,
+        sessionId: s.id,
+        best: value,
+        e1rm: type === 'weight' ? bestE1rm(e.sets) : null,
+        sets: e.sets.filter((x) => x.done && !x.warmup),
+      });
+    }
+  }
+  return [...map.values()].sort((a, b) => b.points.at(-1).date - a.points.at(-1).date);
+}
+
+/** Índices dos pontos que bateram tudo o que veio antes (o primeiro treino não conta como recorde). */
+export function recordIndexes(values) {
+  const out = [];
+  let top = values[0];
+  for (let i = 1; i < values.length; i++) {
+    if (values[i] != null && values[i] > top) { out.push(i); top = values[i]; }
+  }
+  return out;
+}

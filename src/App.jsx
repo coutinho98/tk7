@@ -11,6 +11,7 @@ import Session from './pages/Session';
 import History from './pages/History';
 import SessionDetail from './pages/SessionDetail';
 import Progress from './pages/Progress';
+import ExerciseProgress from './pages/ExerciseProgress';
 import Settings from './pages/Settings';
 import StartNext from './pages/StartNext';
 
@@ -30,6 +31,7 @@ export default function App() {
           <Route path="/historico" element={<History />} />
           <Route path="/historico/:id" element={<SessionDetail />} />
           <Route path="/progresso" element={<Progress />} />
+          <Route path="/progresso/:key" element={<ExerciseProgress />} />
           <Route path="/ajustes" element={<Settings />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

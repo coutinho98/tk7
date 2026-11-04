@@ -1,11 +1,11 @@
 import { useMemo, useState } from 'react';
-import { useLocation, useNavigate, useParams } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { Minus, Pencil, Plus, Trash2, Trophy, X } from 'lucide-react';
 import { useStore } from '../store';
 import { Page, BackLink, Stepper } from '../components/ui';
 import Cassette, { TAPE_COLORS } from '../components/Cassette';
-import { clock, doneSets, kg, longDate, num, plural, relativeDay, volumeOf, workoutFocus, workoutLetter } from '../lib/format';
+import { clock, doneSets, kg, longDate, norm, num, plural, relativeDay, volumeOf, workoutFocus, workoutLetter } from '../lib/format';
 import { TYPES, typeOf } from '../lib/exercises';
 import { compareSessions, previousOfSameWorkout, recordsIn, setText } from '../lib/records';
 
@@ -65,7 +65,7 @@ export default function SessionDetail() {
         return (
           <section key={e.name} className="card detail-ex">
             <h2>
-              {e.name}
+              <Link to={`/progresso/${encodeURIComponent(norm(e.name))}`}>{e.name}</Link>
               {recordNames.has(e.name) && <span className="pr-badge"><Trophy size={12} /> recorde</span>}
             </h2>
             {e.note && <p className="ex-note static">{e.note}</p>}

@@ -1,8 +1,8 @@
-import { useRef, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'motion/react';
 import {
-  ArrowDown, ArrowUp, Calculator, Check, ChevronDown, Flame, Minus, MoreHorizontal, Plus, Repeat, StickyNote, Timer, Trash2, TrendingUp,
+  ArrowDown, ArrowUp, Calculator, Check, ChevronDown, Flame, Minus, MoreHorizontal, Plus, Repeat, StickyNote, Timer, Trash2, TrendingUp, Trophy,
 } from 'lucide-react';
 import { useStore } from '../store';
 import { Page, BackLink, RestPick } from '../components/ui';
@@ -12,7 +12,7 @@ import { tapeColor } from '../components/Cassette';
 import { useNow } from '../lib/hooks';
 import { clock, doneSets, kg, num, restLabel, totalSets } from '../lib/format';
 import { TYPES, WARMUP_REST_OPTIONS, knownExercises, warmupRestOf } from '../lib/exercises';
-import { prevText } from '../lib/records';
+import { METRIC, best, prevText, recordOf } from '../lib/records';
 import { vibrate } from '../lib/alerts';
 import { confirmDialog, promptDialog } from '../lib/confirm';
 
@@ -188,11 +188,24 @@ function ExerciseCard({ exercise: e, ei, count, expanded, onToggleOpen, onComple
   const rows = labelSets(e);
   const hasPrev = rows.some((r) => r.prev);
   const work = e.sets.filter((s) => !s.warmup);
+  // melhor marca de todos os treinos anteriores (sem histórico, não há recorde a bater)
+  const record = useMemo(() => recordOf(sessions, e.name), [sessions, e.name]);
+  const isRecord = (s) => record != null && s.done && !s.warmup && (METRIC[e.type].of(s) ?? -Infinity) > record;
 
-  // chamado depois de marcar uma série: se foi a última do exercício, avisa a tela
-  const afterCheck = () => {
-    const now = useStore.getState().active?.exercises[ei];
-    if (now && isComplete(now)) onComplete();
+  // chamado depois de marcar uma série: comemora recorde e, se foi a última do exercício, avisa a tela
+  const afterCheck = (si) => {
+    const { active, settings, showToast } = useStore.getState();
+    const now = active?.exercises[ei];
+    if (!now) return;
+    const s = now.sets[si];
+    // só a primeira série que passa a marca da sessão comemora; repetir a mesma carga não
+    const others = best(now.type, now.sets.filter((_, i) => i !== si));
+    if (isRecord(s) && (others == null || METRIC[now.type].of(s) > others)) {
+      const { unit } = METRIC[now.type];
+      showToast(`🏆 Recorde! ${now.name} · ${kg(METRIC[now.type].of(s))} ${unit} (antes ${kg(record)})`, 'pr');
+      if (settings.vibrate) vibrate([40, 70, 40, 70, 160]);
+    }
+    if (isComplete(now)) onComplete();
   };
 
   const editNote = async () => {
@@ -279,7 +292,7 @@ function ExerciseCard({ exercise: e, ei, count, expanded, onToggleOpen, onComple
         <span>#</span>{hasPrev && <span>anterior</span>}<span>{a.short}</span><span>{b.short}</span><span />
       </div>
       {rows.map(({ set, label, prev }, si) => (
-        <SetRow key={si} set={set} label={label} prev={prev} showPrev={hasPrev} type={e.type} ei={ei} si={si} canWarmup={e.type === 'weight'} onChecked={afterCheck} />
+        <SetRow key={si} set={set} label={label} prev={prev} showPrev={hasPrev} type={e.type} ei={ei} si={si} canWarmup={e.type === 'weight'} record={isRecord(set)} onChecked={() => afterCheck(si)} />
       ))}
       <div className="ex-card-foot">
         <button className="btn btn-ghost" onClick={() => addSet(ei)}><Plus size={15} /> série</button>
@@ -325,7 +338,7 @@ function labelSets(e) {
 
 const CHECK = 'M5 12.5l4.2 4.2L19 7';
 
-function SetRow({ set: s, label, prev, showPrev, type, ei, si, canWarmup, onChecked }) {
+function SetRow({ set: s, label, prev, showPrev, type, ei, si, canWarmup, record, onChecked }) {
   const setSetField = useStore((st) => st.setSetField);
   const toggleSet = useStore((st) => st.toggleSet);
   const toggleWarmup = useStore((st) => st.toggleWarmup);
@@ -352,17 +365,17 @@ function SetRow({ set: s, label, prev, showPrev, type, ei, si, canWarmup, onChec
   );
 
   return (
-    <motion.div className={`set-grid set-row ${s.done ? 'done' : ''} ${s.warmup ? 'warm' : ''} ${showPrev ? '' : 'no-prev'}`} layout="position">
+    <motion.div className={`set-grid set-row ${s.done ? 'done' : ''} ${s.warmup ? 'warm' : ''} ${record ? 'pr' : ''} ${showPrev ? '' : 'no-prev'}`} layout="position">
       {canWarmup ? (
         <button
           className="set-n mono"
           onClick={() => toggleWarmup(ei, si)}
           aria-label={s.warmup ? 'Série de aquecimento — tocar para virar série válida' : `Série ${label} — tocar para virar aquecimento`}
         >
-          {label}
+          {record ? <Trophy size={13} aria-label="recorde" /> : label}
         </button>
       ) : (
-        <span className="set-n mono">{label}</span>
+        <span className="set-n mono">{record ? <Trophy size={13} aria-label="recorde" /> : label}</span>
       )}
       {showPrev && <span className="set-prev mono">{prevText(type, prev)}</span>}
       {field(a, a.long)}

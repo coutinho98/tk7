@@ -83,7 +83,7 @@ export const useStore = create(
 
     /* ---------- desfazer ---------- */
     toast: null,
-    showToast: (msg) => set((s) => { s.toast = { msg, id: uid() }; }),
+    showToast: (msg, kind) => set((s) => { s.toast = { msg, id: uid(), kind }; }),
 
     /** Executa uma ação destrutiva e mostra um aviso com "Desfazer". */
     withUndo: (msg, fn) => {

@@ -1,30 +1,14 @@
 import { useMemo, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { motion } from 'motion/react';
-import { TrendingDown, TrendingUp } from 'lucide-react';
+import { ChevronRight, TrendingDown, TrendingUp } from 'lucide-react';
 import { useStore } from '../store';
 import { Page, Chip, Sparkline } from '../components/ui';
 import Body from './Body';
 import EmptyState from '../components/EmptyState';
 import { kg, norm, plural, shortDate } from '../lib/format';
-import { TYPES, typeOf } from '../lib/exercises';
-import { METRIC, best, bestE1rm } from '../lib/records';
-
-/** Para cada exercício, a melhor marca em cada treino (do mais antigo ao mais recente). */
-function exerciseStats(sessions) {
-  const map = new Map();
-  for (const s of [...sessions].reverse()) {
-    for (const e of s.exercises) {
-      const type = typeOf(e);
-      const value = best(type, e.sets);
-      if (value == null) continue;
-      const k = norm(e.name);
-      if (!map.has(k)) map.set(k, { name: e.name, type, points: [] });
-      map.get(k).points.push({ date: s.start, best: value, e1rm: type === 'weight' ? bestE1rm(e.sets) : null });
-    }
-  }
-  return [...map.values()].sort((a, b) => b.points.at(-1).date - a.points.at(-1).date);
-}
+import { TYPES } from '../lib/exercises';
+import { METRIC, exerciseStats } from '../lib/records';
 
 const TABS = [['ex', 'Exercícios'], ['body', 'Corpo']];
 
@@ -98,7 +82,7 @@ function Exercises() {
       )}
 
       <div className="tiles">
-        {shown.map(({ name, type, points }, i) => {
+        {shown.map(({ key, name, type, points }, i) => {
           const useE1rm = metric === 'e1rm' && type === 'weight';
           const vals = points.map((p) => (useE1rm ? p.e1rm : p.best));
           const unit = useE1rm ? 'kg' : METRIC[type].unit;
@@ -111,6 +95,7 @@ function Exercises() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.04 * i, duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
             >
+              <Link to={`/progresso/${encodeURIComponent(key)}${useE1rm ? '?metrica=1rm' : ''}`} className="tile-link">
               <div className="tile tile-progress">
                 <div className="progress-top">
                   <span className="progress-value mono">{kg(last)}<small>{unit}</small></span>
@@ -135,7 +120,9 @@ function Exercises() {
                     {type !== 'weight' && ` · ${TYPES[type].label.toLowerCase()}`}
                   </p>
                 </div>
+                <ChevronRight size={16} className="faint" />
               </div>
+              </Link>
             </motion.article>
           );
         })}

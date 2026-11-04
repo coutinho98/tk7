@@ -22,7 +22,7 @@ export function Toast() {
         {toast && (
           <motion.div
             key={toast.id}
-            className="toast"
+            className={`toast ${toast.kind ? `toast-${toast.kind}` : ''}`}
             initial={{ y: -24, opacity: 0, filter: 'blur(6px)' }}
             animate={{ y: 0, opacity: 1, filter: 'blur(0px)' }}
             exit={{ y: -16, opacity: 0, filter: 'blur(6px)' }}

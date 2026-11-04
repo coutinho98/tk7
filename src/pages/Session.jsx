@@ -10,9 +10,9 @@ import { Sheet } from '../components/Overlays';
 import PlateCalc from '../components/PlateCalc';
 import { tapeColor } from '../components/Cassette';
 import { useNow } from '../lib/hooks';
-import { clock, doneSets, kg, num, plural, restLabel, totalSets } from '../lib/format';
+import { clock, doneSets, kg, num, restLabel, totalSets } from '../lib/format';
 import { TYPES, WARMUP_REST_OPTIONS, knownExercises, warmupRestOf } from '../lib/exercises';
-import { METRIC, autoWarmupCount, best, prevText, recordOf } from '../lib/records';
+import { METRIC, best, prevText, recordOf } from '../lib/records';
 import { vibrate } from '../lib/alerts';
 import { confirmDialog, promptDialog } from '../lib/confirm';
 
@@ -169,7 +169,6 @@ function ExerciseCard({ exercise: e, ei, count, expanded, onToggleOpen, onComple
   const startRest = useStore((s) => s.startRest);
   const addSet = useStore((s) => s.addSet);
   const addWarmupSet = useStore((s) => s.addWarmupSet);
-  const generateWarmup = useStore((s) => s.generateWarmup);
   const removeSet = useStore((s) => s.removeSet);
   const applySuggestion = useStore((s) => s.applySuggestion);
   const setExerciseNote = useStore((s) => s.setExerciseNote);
@@ -187,8 +186,6 @@ function ExerciseCard({ exercise: e, ei, count, expanded, onToggleOpen, onComple
   // a sugestão some quando as séries pendentes já estão na carga sugerida (ou além dela, no sentido sugerido)
   const goingUp = e.suggest && e.suggest.weight > e.suggest.from;
   const showSuggest = e.suggest && pending.some((s) => (goingUp ? (s.weight ?? 0) < e.suggest.weight : (s.weight ?? Infinity) > e.suggest.weight));
-  const hasWarmup = e.sets.some((s) => s.warmup);
-  const canWarm = e.type === 'weight' && !e.sets.some((s) => s.done) && (pending[0]?.weight ?? 0) > 0;
   const currentWeight = pending[0]?.weight ?? e.sets.at(-1)?.weight;
   const rows = labelSets(e);
   const hasPrev = rows.some((r) => r.prev);
@@ -299,9 +296,6 @@ function ExerciseCard({ exercise: e, ei, count, expanded, onToggleOpen, onComple
       <div className="ex-card-foot">
         <button className="btn btn-ghost" onClick={() => addSet(ei)}><Plus size={15} /> série</button>
         <button className="btn btn-ghost" onClick={() => removeSet(ei)} disabled={e.sets.length <= 1}><Minus size={15} /> série</button>
-        {canWarm && !hasWarmup && (
-          <button className="btn btn-ghost" onClick={() => generateWarmup(ei)} aria-label="Gerar séries de aquecimento"><Flame size={15} /> aquecer</button>
-        )}
       </div>
       </motion.div>
       )}
@@ -316,14 +310,8 @@ function ExerciseCard({ exercise: e, ei, count, expanded, onToggleOpen, onComple
           {a.key === 'weight' && e.type === 'weight' && (
             <button onClick={() => { setMenu(false); setPlates(true); }}><Calculator size={17} /> Calculadora de anilhas</button>
           )}
-          {canWarm && (
-            <button onClick={() => { generateWarmup(ei); setMenu(false); }}>
-              <Flame size={17} /> {hasWarmup ? 'Recalcular aquecimento' : 'Gerar aquecimento'}
-              <small className="menu-hint">{plural(autoWarmupCount(pending[0]?.weight), 'série')} até {kg(pending[0]?.weight)} kg</small>
-            </button>
-          )}
           {e.type === 'weight' && (
-            <button onClick={() => { addWarmupSet(ei); setMenu(false); }}><Plus size={17} /> Adicionar série de aquecimento</button>
+            <button onClick={() => { addWarmupSet(ei); setMenu(false); }}><Flame size={17} /> Adicionar série de aquecimento</button>
           )}
           <button onClick={editNote}><StickyNote size={17} /> {e.note ? 'Editar anotação' : 'Adicionar anotação'}</button>
           <button onClick={replace}><Repeat size={17} /> Trocar exercício</button>

@@ -97,9 +97,6 @@ const RAMP = {
   5: [[0.3, 10], [0.45, 8], [0.6, 5], [0.75, 3], [0.85, 2]],
 };
 
-/** Quantas séries de aquecimento fazem sentido para a carga: mais pesado, rampa mais longa. */
-export const autoWarmupCount = (w) => (!w || w < 40 ? 1 : w < 80 ? 2 : w < 120 ? 3 : 4);
-
 /**
  * Séries de aquecimento calculadas a partir da carga de trabalho. Pula degraus que
  * arredondariam para a mesma carga (ou que já chegariam nela). `auto` marca as geradas,

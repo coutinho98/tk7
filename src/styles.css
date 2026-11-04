@@ -1126,7 +1126,6 @@ button.set-n:hover { background: var(--surface); }
 .suggest-inner > svg { flex: none; color: var(--text); }
 .suggest-inner b { color: var(--text); }
 .suggest-inner b { font-weight: 650; }
-.menu-list button .menu-hint { margin-left: auto; font-size: 12.5px; color: var(--text-3); font-variant-numeric: tabular-nums; }
 
 /* menu de opções do exercício */
 .menu-list { display: grid; gap: 2px; margin: 6px -8px 0; }

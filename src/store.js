@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
 import { uid } from './lib/format';
 import { TYPES, typeOf, guessType, newExercise, sampleWorkouts, warmupRestOf } from './lib/exercises';
-import { autoWarmupCount, lastSetsFor, recentSetsFor, suggestLoad, warmupSets } from './lib/records';
+import { lastSetsFor, recentSetsFor, suggestLoad, warmupSets } from './lib/records';
 
 // Mesma chave e formato da versão 1: os dados antigos continuam valendo, e o backup também.
 const KEY = 'treino:v1';
@@ -182,17 +182,6 @@ export const useStore = create(
 
     /** Alterna uma série entre aquecimento e válida. */
     toggleWarmup: (ei, si) => set((s) => { const st = s.active.exercises[ei].sets[si]; st.warmup = !st.warmup; delete st.auto; }),
-
-    /** Monta a rampa de aquecimento a partir da carga de trabalho, no lugar das séries de aquecimento ainda não feitas. */
-    generateWarmup: (ei) =>
-      set((s) => {
-        const e = s.active.exercises[ei];
-        const work = firstWorkWeight(e);
-        const done = e.sets.filter((x) => x.warmup && x.done);
-        e.warmCount = autoWarmupCount(work);
-        const fresh = warmupSets(e.warmCount, work).filter((x) => !done.some((d) => d.weight >= x.weight));
-        e.sets = [...done, ...fresh, ...e.sets.filter((x) => !x.warmup)];
-      }),
 
     removeSet: (ei) =>
       set((s) => {

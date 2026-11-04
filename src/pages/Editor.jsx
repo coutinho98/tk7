@@ -157,7 +157,7 @@ function ExerciseItem({ exercise: e, index, onChange, onRemove }) {
         <div className="warm-row">
           <div>
             <span>Aquecimento</span>
-            <small>séries leves antes; não contam no volume</small>
+            <small>cargas e reps calculadas a partir da série de trabalho</small>
           </div>
           <div className="stepper-body">
             <button type="button" onClick={() => onChange({ warmup: Math.max(0, (e.warmup || 0) - 1) })} aria-label="Menos séries de aquecimento">−</button>

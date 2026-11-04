@@ -1117,12 +1117,16 @@ button.set-n:hover { background: var(--surface); }
   margin-bottom: 10px;
   padding: 10px 12px;
   border-radius: 14px;
-  background: color-mix(in srgb, var(--up) 11%, transparent);
+  background: var(--surface);
+  box-shadow: inset 0 0 0 1px var(--line);
   font-size: 13px;
   line-height: 1.4;
+  color: var(--text-2);
 }
-.suggest-inner > svg { flex: none; color: var(--up); }
+.suggest-inner > svg { flex: none; color: var(--text); }
+.suggest-inner b { color: var(--text); }
 .suggest-inner b { font-weight: 650; }
+.menu-list button .menu-hint { margin-left: auto; font-size: 12.5px; color: var(--text-3); font-variant-numeric: tabular-nums; }
 
 /* menu de opções do exercício */
 .menu-list { display: grid; gap: 2px; margin: 6px -8px 0; }

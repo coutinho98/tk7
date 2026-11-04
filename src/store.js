@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
 import { uid } from './lib/format';
 import { TYPES, typeOf, guessType, newExercise, sampleWorkouts, warmupRestOf } from './lib/exercises';
-import { lastSetsFor, suggestWeight, warmupSets } from './lib/records';
+import { autoWarmupCount, lastSetsFor, recentSetsFor, suggestLoad, warmupSets } from './lib/records';
 
 // Mesma chave e formato da versão 1: os dados antigos continuam valendo, e o backup também.
 const KEY = 'treino:v1';
@@ -39,13 +39,14 @@ const undoable = ({ workouts, sessions, active, body }) => ({ workouts, sessions
 function buildActiveExercise(tpl, sessions) {
   const type = typeOf(tpl);
   const { a, b } = TYPES[type];
+  const history = recentSetsFor(sessions, tpl.name, 3);
   const prev = lastSetsFor(sessions, tpl.name);
   const target = { sets: tpl.sets, reps: tpl.reps };
   // aquecimento só faz sentido em exercício com carga
   const prevWarm = type === 'weight' ? lastSetsFor(sessions, tpl.name, { warmup: true }) : null;
   const warmCount = type === 'weight' ? tpl.warmup || 0 : 0;
   const workWeight = prev?.[0]?.weight ?? tpl.weight;
-  const warm = warmupSets(warmCount, workWeight, tpl.reps, prevWarm);
+  const warm = warmupSets(warmCount, workWeight);
   return {
     exId: tpl.id,
     name: tpl.name.trim(),
@@ -54,7 +55,8 @@ function buildActiveExercise(tpl, sessions) {
     rest: tpl.rest || 90,
     warmupRest: tpl.warmupRest ?? null,
     target,
-    suggest: type === 'weight' ? suggestWeight(prev, target) : null,
+    suggest: type === 'weight' ? suggestLoad(history, target) : null,
+    warmCount,
     prev: prev ? prev.map((s) => ({ [a.key]: s[a.key] ?? null, [b.key]: s[b.key] ?? null })) : null,
     prevWarm,
     sets: [
@@ -70,6 +72,16 @@ function buildActiveExercise(tpl, sessions) {
 
 /** Peso da 1ª série válida — base para calcular o aquecimento. */
 const firstWorkWeight = (e) => e.sets.find((s) => !s.warmup)?.weight ?? null;
+
+/**
+ * Recalcula o aquecimento quando a carga de trabalho muda — só se ele ainda é o gerado pelo app
+ * (nenhuma série dele feita nem editada à mão).
+ */
+function refreshWarmups(e) {
+  const warm = e.sets.filter((x) => x.warmup);
+  if (!warm.length || !warm.every((x) => x.auto && !x.done)) return;
+  e.sets = [...warmupSets(e.warmCount || warm.length, firstWorkWeight(e)), ...e.sets.filter((x) => !x.warmup)];
+}
 
 function startRestDraft(active, sec, label) {
   active.restEnd = Date.now() + sec * 1000;
@@ -127,7 +139,14 @@ export const useStore = create(
       return true;
     },
 
-    setSetField: (ei, si, field, value) => set((s) => { s.active.exercises[ei].sets[si][field] = value; }),
+    setSetField: (ei, si, field, value) =>
+      set((s) => {
+        const e = s.active.exercises[ei];
+        const st = e.sets[si];
+        st[field] = value;
+        if (st.warmup) delete st.auto; // mexeu à mão: o app não recalcula mais
+        else if (field === 'weight' && st === e.sets.find((x) => !x.warmup)) refreshWarmups(e);
+      }),
 
     /** Marca/desmarca a série. Ao marcar, já começa o descanso. */
     toggleSet: (ei, si) =>
@@ -162,7 +181,18 @@ export const useStore = create(
       }),
 
     /** Alterna uma série entre aquecimento e válida. */
-    toggleWarmup: (ei, si) => set((s) => { const st = s.active.exercises[ei].sets[si]; st.warmup = !st.warmup; }),
+    toggleWarmup: (ei, si) => set((s) => { const st = s.active.exercises[ei].sets[si]; st.warmup = !st.warmup; delete st.auto; }),
+
+    /** Monta a rampa de aquecimento a partir da carga de trabalho, no lugar das séries de aquecimento ainda não feitas. */
+    generateWarmup: (ei) =>
+      set((s) => {
+        const e = s.active.exercises[ei];
+        const work = firstWorkWeight(e);
+        const done = e.sets.filter((x) => x.warmup && x.done);
+        e.warmCount = autoWarmupCount(work);
+        const fresh = warmupSets(e.warmCount, work).filter((x) => !done.some((d) => d.weight >= x.weight));
+        e.sets = [...done, ...fresh, ...e.sets.filter((x) => !x.warmup)];
+      }),
 
     removeSet: (ei) =>
       set((s) => {
@@ -177,6 +207,7 @@ export const useStore = create(
       set((s) => {
         const e = s.active.exercises[ei];
         e.sets.forEach((st) => { if (!st.done && !st.warmup) st.weight = e.suggest.weight; });
+        refreshWarmups(e);
       }),
 
     addActiveExercise: (name) => {
@@ -239,7 +270,7 @@ export const useStore = create(
       const session = {
         id: a.id, workoutId: a.workoutId, name: a.name, start: a.start, end: Date.now(), note: a.note?.trim() || '',
         exercises: a.exercises
-          .map((e) => ({ name: e.name, type: e.type, note: e.note || '', sets: e.sets.filter((x) => x.done) }))
+          .map((e) => ({ name: e.name, type: e.type, note: e.note || '', ...(e.target?.reps ? { target: e.target } : {}), sets: e.sets.filter((x) => x.done) }))
           .filter((e) => e.sets.length),
       };
       set((s) => { s.sessions.unshift(session); s.active = null; });

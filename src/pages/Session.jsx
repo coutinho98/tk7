@@ -2,7 +2,7 @@ import { useMemo, useRef, useState } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'motion/react';
 import {
-  ArrowDown, ArrowUp, Calculator, Check, ChevronDown, Flame, Minus, MoreHorizontal, Plus, Repeat, StickyNote, Timer, Trash2, TrendingUp, Trophy,
+  ArrowDown, ArrowUp, Calculator, Check, ChevronDown, Flame, Minus, MoreHorizontal, Plus, Repeat, StickyNote, Timer, Trash2, TrendingDown, TrendingUp, Trophy, ArrowLeftRight,
 } from 'lucide-react';
 import { useStore } from '../store';
 import { Page, BackLink, RestPick } from '../components/ui';
@@ -10,9 +10,9 @@ import { Sheet } from '../components/Overlays';
 import PlateCalc from '../components/PlateCalc';
 import { tapeColor } from '../components/Cassette';
 import { useNow } from '../lib/hooks';
-import { clock, doneSets, kg, num, restLabel, totalSets } from '../lib/format';
+import { clock, doneSets, kg, num, plural, restLabel, totalSets } from '../lib/format';
 import { TYPES, WARMUP_REST_OPTIONS, knownExercises, warmupRestOf } from '../lib/exercises';
-import { METRIC, best, prevText, recordOf } from '../lib/records';
+import { METRIC, autoWarmupCount, best, prevText, recordOf } from '../lib/records';
 import { vibrate } from '../lib/alerts';
 import { confirmDialog, promptDialog } from '../lib/confirm';
 
@@ -169,6 +169,7 @@ function ExerciseCard({ exercise: e, ei, count, expanded, onToggleOpen, onComple
   const startRest = useStore((s) => s.startRest);
   const addSet = useStore((s) => s.addSet);
   const addWarmupSet = useStore((s) => s.addWarmupSet);
+  const generateWarmup = useStore((s) => s.generateWarmup);
   const removeSet = useStore((s) => s.removeSet);
   const applySuggestion = useStore((s) => s.applySuggestion);
   const setExerciseNote = useStore((s) => s.setExerciseNote);
@@ -183,7 +184,11 @@ function ExerciseCard({ exercise: e, ei, count, expanded, onToggleOpen, onComple
   const { a, b } = TYPES[e.type];
   const allDone = e.sets.every((s) => s.done);
   const pending = e.sets.filter((s) => !s.done && !s.warmup);
-  const showSuggest = e.suggest && pending.length > 0 && pending.some((s) => (s.weight ?? 0) < e.suggest.weight);
+  // a sugestão some quando as séries pendentes já estão na carga sugerida (ou além dela, no sentido sugerido)
+  const goingUp = e.suggest && e.suggest.weight > e.suggest.from;
+  const showSuggest = e.suggest && pending.some((s) => (goingUp ? (s.weight ?? 0) < e.suggest.weight : (s.weight ?? Infinity) > e.suggest.weight));
+  const hasWarmup = e.sets.some((s) => s.warmup);
+  const canWarm = e.type === 'weight' && !e.sets.some((s) => s.done) && (pending[0]?.weight ?? 0) > 0;
   const currentWeight = pending[0]?.weight ?? e.sets.at(-1)?.weight;
   const rows = labelSets(e);
   const hasPrev = rows.some((r) => r.prev);
@@ -279,13 +284,7 @@ function ExerciseCard({ exercise: e, ei, count, expanded, onToggleOpen, onComple
       <AnimatePresence>
         {showSuggest && (
           <motion.div className="suggest" initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}>
-            <div className="suggest-inner">
-              <TrendingUp size={15} />
-              <span className="grow">
-                Da última vez você fez todas as reps com {kg(e.suggest.from)} kg. Tente <b>{kg(e.suggest.weight)} kg</b>.
-              </span>
-              <button className="chip chip-action" onClick={() => applySuggestion(ei)}>aplicar</button>
-            </div>
+            <SuggestBanner suggest={e.suggest} onApply={() => applySuggestion(ei)} />
           </motion.div>
         )}
       </AnimatePresence>
@@ -300,6 +299,9 @@ function ExerciseCard({ exercise: e, ei, count, expanded, onToggleOpen, onComple
       <div className="ex-card-foot">
         <button className="btn btn-ghost" onClick={() => addSet(ei)}><Plus size={15} /> série</button>
         <button className="btn btn-ghost" onClick={() => removeSet(ei)} disabled={e.sets.length <= 1}><Minus size={15} /> série</button>
+        {canWarm && !hasWarmup && (
+          <button className="btn btn-ghost" onClick={() => generateWarmup(ei)} aria-label="Gerar séries de aquecimento"><Flame size={15} /> aquecer</button>
+        )}
       </div>
       </motion.div>
       )}
@@ -314,8 +316,14 @@ function ExerciseCard({ exercise: e, ei, count, expanded, onToggleOpen, onComple
           {a.key === 'weight' && e.type === 'weight' && (
             <button onClick={() => { setMenu(false); setPlates(true); }}><Calculator size={17} /> Calculadora de anilhas</button>
           )}
+          {canWarm && (
+            <button onClick={() => { generateWarmup(ei); setMenu(false); }}>
+              <Flame size={17} /> {hasWarmup ? 'Recalcular aquecimento' : 'Gerar aquecimento'}
+              <small className="menu-hint">{plural(autoWarmupCount(pending[0]?.weight), 'série')} até {kg(pending[0]?.weight)} kg</small>
+            </button>
+          )}
           {e.type === 'weight' && (
-            <button onClick={() => { addWarmupSet(ei); setMenu(false); }}><Flame size={17} /> Adicionar série de aquecimento</button>
+            <button onClick={() => { addWarmupSet(ei); setMenu(false); }}><Plus size={17} /> Adicionar série de aquecimento</button>
           )}
           <button onClick={editNote}><StickyNote size={17} /> {e.note ? 'Editar anotação' : 'Adicionar anotação'}</button>
           <button onClick={replace}><Repeat size={17} /> Trocar exercício</button>
@@ -330,6 +338,24 @@ function ExerciseCard({ exercise: e, ei, count, expanded, onToggleOpen, onComple
 }
 
 /** Numera as séries válidas (1, 2, 3…) e marca as de aquecimento com "A", cada uma com seu "anterior". */
+/** Faixa com a carga sugerida para hoje e o porquê, em uma frase. */
+function SuggestBanner({ suggest: g, onApply }) {
+  const Icon = g.kind === 'deload' ? TrendingDown : g.kind === 'convert' ? ArrowLeftRight : TrendingUp;
+  const target = <b>{kg(g.weight)}&nbsp;kg</b>;
+  const text =
+    g.kind === 'convert' ? <>Você passou para {g.reps} reps. Pelo seu 1RM estimado ({kg(Math.round(g.e1rm))}&nbsp;kg), comece com {target}.</>
+    : g.kind === 'deload' ? <>{kg(g.from)}&nbsp;kg travou nos últimos 3 treinos. Recue para {target} e suba de novo.</>
+    : g.easy ? <>Sobraram reps com {kg(g.from)}&nbsp;kg da última vez. Pule para {target}.</>
+    : <>Da última vez: {g.sets}×{g.reps} com {kg(g.from)}&nbsp;kg, todas as reps. Tente {target}.</>;
+  return (
+    <div className={`suggest-inner ${g.kind}`}>
+      <Icon size={15} />
+      <span className="grow">{text}</span>
+      <button className="chip chip-action" onClick={onApply}>aplicar</button>
+    </div>
+  );
+}
+
 function labelSets(e) {
   let work = 0, warm = 0;
   return e.sets.map((set) =>

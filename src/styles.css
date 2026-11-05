@@ -1125,6 +1125,12 @@ button.set-n:hover { background: var(--surface); }
 }
 .suggest-inner > svg { flex: none; color: var(--text); }
 .suggest-inner b { color: var(--text); }
+
+/* "como foi?" ao terminar o exercício */
+.effort { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 10px; padding: 0 2px; }
+.ex-collapsed + .effort { margin: 0; padding: 0 14px 14px; }
+.effort-label { font-size: 13px; color: var(--text-2); }
+.effort-seg button { height: 32px; padding: 0 12px; font-size: 13px; font-weight: 500; }
 .suggest-inner b { font-weight: 650; }
 
 /* menu de opções do exercício */

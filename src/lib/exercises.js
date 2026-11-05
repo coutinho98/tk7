@@ -74,6 +74,8 @@ export const knownExercises = (sessions) =>
 
 export const newExercise = (name = '', sets = 3, reps = 10, weight = null, rest = 90, type = guessType(name) || 'weight') => ({
   id: uid(), name, type, sets, reps, weight, rest, note: '', warmup: 0,
+  // faixa de reps para a dupla progressão: a carga só sobe quando todas as séries chegam no topo
+  ...(type === 'weight' && reps ? { repsMax: reps + 2 } : {}),
   ...(type !== 'weight' ? TYPE_DEFAULTS[type] : {}),
 });
 

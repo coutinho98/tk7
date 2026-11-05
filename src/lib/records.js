@@ -65,7 +65,8 @@ export function lastSetsFor(sessions, name, { warmup = false } = {}) {
 
 /**
  * As últimas `n` vezes que o exercício apareceu, da mais recente para a mais antiga:
- * `{ sets, target }` com as séries válidas feitas e o alvo daquele dia (treinos antigos não têm alvo).
+ * `{ sets, target, effort }`: séries válidas feitas, o alvo daquele dia e como a pessoa sentiu
+ * ('easy' | 'ok' | 'hard'). Treinos antigos não têm alvo nem esforço.
  */
 export function recentSetsFor(sessions, name, n = 3) {
   const k = norm(name);
@@ -74,7 +75,7 @@ export function recentSetsFor(sessions, name, n = 3) {
     const e = s.exercises.find((x) => norm(x.name) === k);
     const sets = e?.sets.filter((x) => x.done && !x.warmup);
     if (sets?.length) {
-      out.push({ sets, target: e.target || null });
+      out.push({ sets, target: e.target || null, effort: e.effort || null });
       if (out.length === n) break;
     }
   }
@@ -116,11 +117,21 @@ export function warmupSets(count, workWeight) {
   return out;
 }
 
+/** Faixa de reps do alvo: [mínimo, máximo]. Sem faixa, os dois são o próprio alvo. */
+export const repRange = (target) => {
+  const lo = target?.reps || 0;
+  return [lo, target?.repsMax > lo ? target.repsMax : lo];
+};
+
 /**
- * Sugestão de carga para hoje, olhando os últimos treinos do exercício (`history`, de recentSetsFor):
- * - `convert`: o alvo de repetições mudou (ou ficou bem acima do que você fez); a carga vem do 1RM estimado;
- * - `up`: da última vez fez todas as séries com todas as reps (sobrou muito? sobe dois degraus);
- * - `deload`: três treinos seguidos travado na mesma carga; recua ~10% para retomar a subida.
+ * Sugestão para hoje pela dupla progressão, olhando os últimos treinos (`history`, de recentSetsFor).
+ * Primeiro sobem as reps dentro da faixa; a carga só sobe (um degrau) quando todas as séries chegam
+ * no topo dela, e aí as reps voltam para o início. "No limite" segura a progressão.
+ * - `convert`: o alvo mudou; a carga vem do 1RM estimado, deixando ~2 reps de folga;
+ * - `up`: chegou no topo da faixa em todas as séries → +1 degrau de carga;
+ * - `reps`: dentro da faixa → mesma carga, uma ou duas reps a mais;
+ * - `hold`: chegaria a subir, mas da última vez foi no limite → repita;
+ * - `deload`: três treinos travado na mesma carga sem evoluir → recua ~10%.
  */
 export function suggestLoad(history, target) {
   const last = history?.[0]?.sets;
@@ -128,29 +139,39 @@ export function suggestLoad(history, target) {
   const top = maxOf(last.map((s) => s.weight));
   if (top == null || top <= 0) return null;
   const atTop = last.filter((s) => s.weight === top);
-  const goal = target?.reps || Math.min(...atTop.map((s) => s.reps || 0));
-  if (!goal) return null;
+  const repsOf = (sets) => sets.map((s) => s.reps || 0);
+  const [lo, hi] = target?.reps ? repRange(target) : Array(2).fill(Math.min(...repsOf(atTop)));
+  if (!lo) return null;
   const inc = loadStep(top);
+  const effort = history[0].effort;
+  const minReps = Math.min(...repsOf(atTop));
 
-  const lastReps = Math.max(...atTop.map((s) => s.reps || 0));
-  const prevGoal = history[0].target?.reps;
-  const changed = prevGoal ? prevGoal !== target?.reps : lastReps <= (target?.reps || 0) - 3;
+  const prev = history[0].target;
+  const changed = prev?.reps ? prev.reps !== lo || repRange(prev)[1] !== hi : minReps <= lo - 3;
   if (target?.reps && changed) {
     const est = maxOf(atTop.map((s) => e1rm(s.weight, s.reps)));
-    const weight = snap(est / (1 + target.reps / 30), inc, Math.floor);
-    if (weight > 0 && weight !== top) return { kind: 'convert', from: top, weight, e1rm: est, reps: target.reps, lastReps };
+    const weight = snap(est / (1 + (lo + 2) / 30), inc, Math.floor);
+    if (weight > 0 && weight !== top) return { kind: 'convert', from: top, weight, reps: lo, lo, hi, e1rm: est };
   }
 
-  const complete = (sets) => sets.length >= (target?.sets || 1) && sets.every((s) => (s.reps || 0) >= goal);
-  if (complete(last)) {
-    const easy = last.every((s) => (s.reps || 0) >= goal + 3);
-    return { kind: 'up', from: top, weight: snap(top + inc * (easy ? 2 : 1), inc), reps: goal, sets: last.length, easy };
+  const reached = (sets, n) => sets.length >= (target?.sets || 1) && sets.every((s) => (s.reps || 0) >= n);
+  if (reached(last, hi)) {
+    if (effort === 'hard') return { kind: 'hold', from: top, weight: top, lo, hi };
+    return { kind: 'up', from: top, weight: snap(top + inc, inc), reps: hi > lo ? lo : null, lo, hi, sets: last.length };
   }
 
-  const stuck = history.length >= 3 && history.slice(0, 3).every(({ sets }) => maxOf(sets.map((s) => s.weight)) === top && !complete(sets));
+  const total = (sets) => repsOf(sets).reduce((a, b) => a + b, 0);
+  const stuck = history.length >= 3 && history.slice(0, 3).every(({ sets }) => maxOf(sets.map((s) => s.weight)) === top && !reached(sets, hi))
+    && total(history[0].sets) <= total(history[2].sets);
   if (stuck) {
     const weight = Math.max(inc, snap(top * 0.9, inc));
-    if (weight < top) return { kind: 'deload', from: top, weight };
+    if (weight < top) return { kind: 'deload', from: top, weight, lo, hi };
+  }
+
+  // dentro da faixa: mais reps com a mesma carga (fácil = duas, no limite = repete)
+  if (hi > lo && minReps >= lo) {
+    const reps = Math.min(hi, minReps + (effort === 'easy' ? 2 : effort === 'hard' ? 0 : 1));
+    if (reps > minReps) return { kind: 'reps', from: top, weight: top, reps, lo, hi };
   }
   return null;
 }

@@ -153,6 +153,24 @@ function ExerciseItem({ exercise: e, index, onChange, onRemove }) {
         <Stepper label={a.long.split(' · ')[0]} suffix={a.long.split(' · ')[1]} value={e[a.key]} step={a.step} onChange={(v) => onChange({ [a.key]: v })} />
       </div>
 
+      {type === 'weight' && e.reps > 0 && (
+        <div className="warm-row">
+          <div>
+            <span>Faixa de reps</span>
+            <small>
+              {e.repsMax > e.reps
+                ? `de ${e.reps} a ${e.repsMax}: a carga sobe quando todas as séries chegam a ${e.repsMax}`
+                : 'sem faixa: a carga sobe quando você bate o alvo'}
+            </small>
+          </div>
+          <div className="stepper-body">
+            <button type="button" onClick={() => onChange({ repsMax: e.repsMax > e.reps + 1 ? e.repsMax - 1 : null })} aria-label="Diminuir topo da faixa">−</button>
+            <span className="mono warm-count">{e.repsMax > e.reps ? e.repsMax : '—'}</span>
+            <button type="button" onClick={() => onChange({ repsMax: Math.min(30, e.repsMax > e.reps ? e.repsMax + 1 : e.reps + 2) })} aria-label="Aumentar topo da faixa">+</button>
+          </div>
+        </div>
+      )}
+
       {type === 'weight' && (
         <div className="warm-row">
           <div>

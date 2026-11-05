@@ -2,7 +2,7 @@ import { useMemo, useRef, useState } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'motion/react';
 import {
-  ArrowDown, ArrowUp, Calculator, Check, ChevronDown, Flame, Minus, MoreHorizontal, Plus, Repeat, StickyNote, Timer, Trash2, TrendingDown, TrendingUp, Trophy, ArrowLeftRight,
+  ArrowDown, ArrowUp, Calculator, Check, ChevronDown, Flame, Minus, MoreHorizontal, Plus, Repeat, StickyNote, Timer, Trash2, TrendingDown, TrendingUp, Trophy, ArrowLeftRight, Pause,
 } from 'lucide-react';
 import { useStore } from '../store';
 import { Page, BackLink, RestPick } from '../components/ui';
@@ -12,7 +12,7 @@ import { tapeColor } from '../components/Cassette';
 import { useNow } from '../lib/hooks';
 import { clock, doneSets, kg, num, restLabel, totalSets } from '../lib/format';
 import { TYPES, WARMUP_REST_OPTIONS, knownExercises, warmupRestOf } from '../lib/exercises';
-import { METRIC, best, prevText, recordOf } from '../lib/records';
+import { METRIC, best, prevText, recordOf, repRange } from '../lib/records';
 import { vibrate } from '../lib/alerts';
 import { confirmDialog, promptDialog } from '../lib/confirm';
 
@@ -183,9 +183,8 @@ function ExerciseCard({ exercise: e, ei, count, expanded, onToggleOpen, onComple
   const { a, b } = TYPES[e.type];
   const allDone = e.sets.every((s) => s.done);
   const pending = e.sets.filter((s) => !s.done && !s.warmup);
-  // a sugestão some quando as séries pendentes já estão na carga sugerida (ou além dela, no sentido sugerido)
-  const goingUp = e.suggest && e.suggest.weight > e.suggest.from;
-  const showSuggest = e.suggest && pending.some((s) => (goingUp ? (s.weight ?? 0) < e.suggest.weight : (s.weight ?? Infinity) > e.suggest.weight));
+  const showSuggest = needsSuggestion(e.suggest, pending, e.sets.some((s) => s.done && !s.warmup));
+  const [lo, hi] = repRange(e.target);
   const currentWeight = pending[0]?.weight ?? e.sets.at(-1)?.weight;
   const rows = labelSets(e);
   const hasPrev = rows.some((r) => r.prev);
@@ -252,17 +251,21 @@ function ExerciseCard({ exercise: e, ei, count, expanded, onToggleOpen, onComple
       exit={{ opacity: 0, scale: 0.96 }}
     >
       {!expanded ? (
+        <>
         <button className="ex-collapsed" onClick={onToggleOpen} aria-expanded="false" aria-label={`Abrir ${e.name}`}>
           <span className={`ex-status mono ${allDone ? 'done' : ''}`}>{allDone ? <Check size={15} strokeWidth={3} /> : ei + 1}</span>
           <span className="grow">
             <b>{e.name}</b>
-            <small className="mono">{work.filter((s) => s.done).length}/{work.length} séries · {restLabel(e.rest)}</small>
+            <small className="mono">{work.filter((s) => s.done).length}/{work.length} séries · {e.effort ? EFFORT_LABEL[e.effort] : restLabel(e.rest)}</small>
           </span>
           <span className="ex-dots" aria-hidden="true">
             {work.map((s, i) => <i key={i} className={s.done ? 'on' : ''} />)}
           </span>
           <ChevronDown size={16} className="faint" />
         </button>
+        {/* o card fecha ao terminar a última série: a pergunta aparece aqui, uma vez */}
+        {e.type === 'weight' && allDone && !e.effort && <EffortPick ei={ei} value={e.effort} />}
+        </>
       ) : (
       <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }} style={{ overflow: 'hidden' }}>
       <div className="ex-card-head">
@@ -288,11 +291,13 @@ function ExerciseCard({ exercise: e, ei, count, expanded, onToggleOpen, onComple
 
       {/* a coluna "anterior" só aparece quando já existe histórico deste exercício */}
       <div className={`set-grid set-grid-head ${hasPrev ? '' : 'no-prev'}`}>
-        <span>#</span>{hasPrev && <span>anterior</span>}<span>{a.short}</span><span>{b.short}</span><span />
+        <span>#</span>{hasPrev && <span>anterior</span>}<span>{a.short}</span>
+        <span>{e.type === 'weight' && hi > lo ? <span className="mono">{lo}–{hi}</span> : b.short}</span><span />
       </div>
       {rows.map(({ set, label, prev }, si) => (
         <SetRow key={si} set={set} label={label} prev={prev} showPrev={hasPrev} type={e.type} ei={ei} si={si} canWarmup={e.type === 'weight'} record={isRecord(set)} onChecked={() => afterCheck(si)} />
       ))}
+      {e.type === 'weight' && allDone && <EffortPick ei={ei} value={e.effort} />}
       <div className="ex-card-foot">
         <button className="btn btn-ghost" onClick={() => addSet(ei)}><Plus size={15} /> série</button>
         <button className="btn btn-ghost" onClick={() => removeSet(ei)} disabled={e.sets.length <= 1}><Minus size={15} /> série</button>
@@ -326,21 +331,61 @@ function ExerciseCard({ exercise: e, ei, count, expanded, onToggleOpen, onComple
 }
 
 /** Numera as séries válidas (1, 2, 3…) e marca as de aquecimento com "A", cada uma com seu "anterior". */
-/** Faixa com a carga sugerida para hoje e o porquê, em uma frase. */
+/**
+ * A sugestão aparece enquanto as séries pendentes não seguem o que ela propõe. "Repita a carga"
+ * (hold) não tem o que aplicar: some quando o exercício começa.
+ */
+function needsSuggestion(g, pending, started) {
+  if (!g || !pending.length) return false;
+  if (g.kind === 'hold') return !started;
+  const up = g.weight > g.from;
+  const off = (s) =>
+    (up ? (s.weight ?? 0) < g.weight : g.weight < g.from ? (s.weight ?? Infinity) > g.weight : s.weight !== g.weight) ||
+    (g.reps != null && (g.kind === 'reps' ? (s.reps ?? 0) < g.reps : s.reps !== g.reps));
+  return pending.some(off);
+}
+
+/** Faixa com a sugestão para hoje e o porquê, em uma frase. */
 function SuggestBanner({ suggest: g, onApply }) {
-  const Icon = g.kind === 'deload' ? TrendingDown : g.kind === 'convert' ? ArrowLeftRight : TrendingUp;
-  const target = <b>{kg(g.weight)}&nbsp;kg</b>;
-  const text =
-    g.kind === 'convert' ? <>Você passou para {g.reps} reps. Pelo seu 1RM estimado ({kg(Math.round(g.e1rm))}&nbsp;kg), comece com {target}.</>
-    : g.kind === 'deload' ? <>{kg(g.from)}&nbsp;kg travou nos últimos 3 treinos. Recue para {target} e suba de novo.</>
-    : g.easy ? <>Sobraram reps com {kg(g.from)}&nbsp;kg da última vez. Pule para {target}.</>
-    : <>Da última vez: {g.sets}×{g.reps} com {kg(g.from)}&nbsp;kg, todas as reps. Tente {target}.</>;
+  const Icon = { deload: TrendingDown, convert: ArrowLeftRight, hold: Pause }[g.kind] || TrendingUp;
+  const w = <b>{kg(g.weight)}&nbsp;kg</b>;
+  const range = g.hi > g.lo;
+  const text = {
+    convert: <>Faixa nova ({range ? `${g.lo}–${g.hi}` : g.lo} reps). Pelo seu 1RM estimado ({kg(Math.round(g.e1rm))}&nbsp;kg), comece com {w}.</>,
+    deload: <>{kg(g.from)}&nbsp;kg travou nos últimos 3 treinos. Recue para {w} e suba de novo.</>,
+    hold: <>Da última vez foi no limite com {kg(g.from)}&nbsp;kg. Repita a carga e capriche na técnica.</>,
+    reps: <>Mantenha {kg(g.weight)}&nbsp;kg e busque <b>{g.reps} reps</b> por série. Chegando a {g.hi}, a carga sobe.</>,
+    up: range
+      ? <>Você chegou a {g.hi} reps em todas as séries. Suba para {w} e volte para {g.lo} reps.</>
+      : <>Da última vez: {g.sets}×{g.hi} com {kg(g.from)}&nbsp;kg, todas as reps. Tente {w}.</>,
+  }[g.kind];
   return (
     <div className={`suggest-inner ${g.kind}`}>
       <Icon size={15} />
       <span className="grow">{text}</span>
-      <button className="chip chip-action" onClick={onApply}>aplicar</button>
+      {g.kind !== 'hold' && <button className="chip chip-action" onClick={onApply}>aplicar</button>}
     </div>
+  );
+}
+
+const EFFORTS = [['easy', 'fácil'], ['ok', 'ok'], ['hard', 'no limite']];
+const EFFORT_LABEL = Object.fromEntries(EFFORTS);
+
+/** "Como foi?" ao terminar o exercício. No limite segura a próxima subida; fácil acelera as reps. */
+function EffortPick({ ei, value }) {
+  const setEffort = useStore((s) => s.setEffort);
+  return (
+    <motion.div className="effort" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}>
+      <span className="effort-label">Como foi?</span>
+      <div className="seg effort-seg" role="radiogroup" aria-label="Como foi o exercício">
+        {EFFORTS.map(([k, text]) => (
+          <button key={k} role="radio" aria-checked={value === k} className={value === k ? 'on' : ''} onClick={() => setEffort(ei, k)}>
+            {value === k && <motion.span layoutId={`effort-${ei}`} className="seg-knob" transition={{ type: 'spring', stiffness: 500, damping: 38 }} />}
+            <span>{text}</span>
+          </button>
+        ))}
+      </div>
+    </motion.div>
   );
 }
 

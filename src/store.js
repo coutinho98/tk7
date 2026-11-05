@@ -41,7 +41,7 @@ function buildActiveExercise(tpl, sessions) {
   const { a, b } = TYPES[type];
   const history = recentSetsFor(sessions, tpl.name, 3);
   const prev = lastSetsFor(sessions, tpl.name);
-  const target = { sets: tpl.sets, reps: tpl.reps };
+  const target = { sets: tpl.sets, reps: tpl.reps, ...(tpl.repsMax > tpl.reps ? { repsMax: tpl.repsMax } : {}) };
   // aquecimento só faz sentido em exercício com carga
   const prevWarm = type === 'weight' ? lastSetsFor(sessions, tpl.name, { warmup: true }) : null;
   const warmCount = type === 'weight' ? tpl.warmup || 0 : 0;
@@ -183,6 +183,9 @@ export const useStore = create(
     /** Alterna uma série entre aquecimento e válida. */
     toggleWarmup: (ei, si) => set((s) => { const st = s.active.exercises[ei].sets[si]; st.warmup = !st.warmup; delete st.auto; }),
 
+    /** Como foi o exercício: 'easy' | 'ok' | 'hard' (de novo no mesmo valor, desfaz). Guia a próxima sugestão. */
+    setEffort: (ei, effort) => set((s) => { const e = s.active.exercises[ei]; e.effort = e.effort === effort ? null : effort; }),
+
     removeSet: (ei) =>
       set((s) => {
         const sets = s.active.exercises[ei].sets;
@@ -195,7 +198,12 @@ export const useStore = create(
     applySuggestion: (ei) =>
       set((s) => {
         const e = s.active.exercises[ei];
-        e.sets.forEach((st) => { if (!st.done && !st.warmup) st.weight = e.suggest.weight; });
+        const { weight, reps } = e.suggest;
+        e.sets.forEach((st) => {
+          if (st.done || st.warmup) return;
+          st.weight = weight;
+          if (reps) st.reps = reps;
+        });
         refreshWarmups(e);
       }),
 
@@ -259,7 +267,7 @@ export const useStore = create(
       const session = {
         id: a.id, workoutId: a.workoutId, name: a.name, start: a.start, end: Date.now(), note: a.note?.trim() || '',
         exercises: a.exercises
-          .map((e) => ({ name: e.name, type: e.type, note: e.note || '', ...(e.target?.reps ? { target: e.target } : {}), sets: e.sets.filter((x) => x.done) }))
+          .map((e) => ({ name: e.name, type: e.type, note: e.note || '', ...(e.target?.reps ? { target: e.target } : {}), ...(e.effort ? { effort: e.effort } : {}), sets: e.sets.filter((x) => x.done) }))
           .filter((e) => e.sets.length),
       };
       set((s) => { s.sessions.unshift(session); s.active = null; });

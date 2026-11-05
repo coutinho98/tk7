@@ -38,7 +38,7 @@ export const DEFAULT_SOUND = 'onda';
 const soundOf = (key) => SOUNDS[key] || SOUNDS[DEFAULT_SOUND];
 const RATE = 44100;
 const LENGTH = 1.5; // segundos — curto o bastante para o Android tratar como aviso
-const VOLUME = 0.45; // volume do aviso (1 = máximo sem distorcer)
+const VOLUME = 0.35; // volume do aviso (1 = máximo sem distorcer)
 
 /** Ritmo da vibração, no formato do navigator.vibrate: [liga, desliga, liga, …] em ms. */
 export const rhythmOf = ({ taps }) =>
